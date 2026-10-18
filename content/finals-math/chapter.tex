@@ -156,8 +156,8 @@ After all values answer $R+1$. Proof: old sums $[0,R]$ and sums using $x$,
 $[x,x+R]$, have no integer gap iff $x\le R+1$.
 Masters Mexico 2022 H; $O(n\log n)$; total plus one must fit.
 \begin{lstlisting}
-long long missing(vector<long long> a) {
-  sort(a.begin(), a.end());
+long long missing(std::vector<long long> a) {
+  std::sort(a.begin(), a.end());
   long long next = 1;
   for (auto x : a) {
     assert(x > 0);
