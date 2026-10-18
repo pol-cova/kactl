@@ -2,6 +2,10 @@
 
 > **Team members:** start with [TEAM.md](./TEAM.md). Latest PDF: [kactl.pdf (latest build)](https://github.com/pol-cova/kactl/releases/download/latest/kactl.pdf)
 
+## Mexico finals companions
+
+The [companion handbooks](handbooks/README.md) add a math reasoning reference and an implementation reference with explained, tested C++17 helpers. Download the [math PDF](handbooks/pdf/math-handbook.pdf) and [implementation PDF](handbooks/pdf/implementation-handbook.pdf). The original notebook and build remain available below.
+
 This repo hosts KACTL, [KTH](https://en.wikipedia.org/wiki/KTH_Royal_Institute_of_Technology)'s ICPC team reference document.
 It consists of 25 pages of copy-pasteable C++ code, for use in ICPC-style programming competitions.
 
