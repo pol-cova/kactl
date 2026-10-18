@@ -8,7 +8,7 @@ CXX=clang++ SANITIZE=1 sh handbooks/test.sh
 python3 handbooks/build.py
 ```
 
-All four test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
+All five test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
 
 ## Independent oracles and boundaries
 
@@ -21,11 +21,13 @@ All four test programs passed in optimized C++17 builds and with AddressSanitize
 
 The selected printed KACTL headers compile in the adapter. This does not claim that all existing KACTL algorithms were revalidated. Original upstream status comments remain upstream evidence.
 
+The fifth program, `native_modules_test.cpp`, compiles all generated module headers together and checks their dependency integration.
+
 ## PDF checks
 
-The final math book has 13 A4 pages; the implementation book has 32. Both have page-numbered contents, PDF bookmarks, recognition tables, and source-derived code modules. Rendered pages were inspected for layout, code clipping, tables, and page furniture. Text extraction checks reject unexpanded code directives and missing-glyph squares. Arithmetic asterisks are preserved, including the divisor example `tau=4*3=12`.
+The final editions use native KACTL A4 landscape with three columns: 4 pages for math and 10 pages for implementations. They have page-numbered contents, code hashes, compact formulas, and source-derived code modules interleaved with contracts. The former portrait layout was replaced. Rendered pages were inspected for layout, code clipping, tables, and page furniture. Native builds finish without LaTeX errors, undefined references, or overfull-box warnings. All pages were rendered and inspected after disabling column stretching that caused code/prose overlap. PDF page boxes were verified as landscape. Math formulas use LaTeX notation; arithmetic is no longer interpreted as Markdown emphasis.
 
-The source and build scripts are editable. KACTL source docblocks with LaTeX markup are omitted from printed code excerpts; source paths, author names, and license labels remain printed, while original files retain the complete notices.
+The source and build scripts are editable. Original KACTL headers are printed through the unchanged native preprocessor. Generated helper modules carry authorship, source, description and validation status metadata.
 
 ## Limits
 

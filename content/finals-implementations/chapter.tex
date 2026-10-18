@@ -1,0 +1,345 @@
+\chapter{Implementations}
+
+\section{Choose the model first}
+A state must determine every future legal move and cost. A cell alone is
+insufficient when keys, parity, orientation, or remaining wall breaks matter.
+Use $(r,c,\mathit{mask})$, $(r,c,t\bmod p)$, or the required full state.
+Count states times transitions before allocating memory.
+
+\textbf{Shortest paths.} Unit costs: BFS. Many sources: one BFS with every
+source at distance zero. Costs in $\{0,1\}$: deque-based 0--1 BFS.
+Nonnegative costs: Dijkstra. DAG: topological DP, even with negative costs.
+Negative edges in a general graph: use Bellman--Ford, not Dijkstra.
+
+\textbf{Connectivity.} Static undirected graph: components. Adding edges:
+DSU. Cheapest connected edge set: Kruskal. Directed mutual reachability:
+SCC. DSU gives neither paths nor shortest distances.
+
+\textbf{Ranges.} Immutable sums: prefix sums. Offline additions: differences.
+Point additions/range sums: Fenwick. Point assignment/associative range
+aggregate: segment tree. Range updates require a compatible lazy structure.
+
+\textbf{Sequences.} Nonnegative contiguous sums with monotone feasibility:
+two pointers. First feasible numeric answer: binary search after proving
+monotonicity. Repeated histories with the same future options: DP.
+
+\subsection{Conventions and numeric limits}
+All companion APIs use zero-based vertices and half-open ranges $[l,r)$.
+Convert one-based inclusive $[L,R]$ to $[L-1,R)$. Empty range: $l=r$.
+Prefix arrays have $n+1$ entries. Weighted unreachable distance is
+\verb@INF=LLONG_MAX/4@; all represented finite distances must be smaller.
+Other sums/products still need their own overflow bound; cast before
+multiplication. Graph endpoints and sources must be valid. Grid rows must
+have equal lengths; $hw$ must fit \texttt{int}. Reset storage per test case.
+Module snippets share the \texttt{finals\_core} namespace and the types
+from the common header. Copy their dependencies too.
+
+\kactlimport{Prelude.h}
+
+\section{Unweighted graphs}
+\subsection{BFS, parents, and multiple sources}
+\verb@bfs(g,{s})@ returns distances in edges, unreachable $-1$, and parents.
+Mark a vertex when enqueuing it. The first discovery is shortest because
+FIFO order processes distance $d$ before $d+1$. With several sources,
+parent $-1$ identifies whichever source supplies the returned shortest path.
+Duplicate sources are ignored; no sources leaves every vertex unreachable.
+Time $O(n+m+|S|)$, extra memory $O(n)$.
+
+\verb@restore_path(result,t)@ returns source through $t$, or an empty vector
+if unreachable. Source equal to target gives one vertex and zero edges.
+Adjacency order chooses ties; lexicographic minimality is not automatic.
+\begin{lstlisting}
+auto a = bfs(g, {source});
+auto p = restore_path(a, target);
+if (p.empty()) { /* impossible */ }
+else { /* p.size()-1 edges */ }
+\end{lstlisting}
+\kactlimport{BFS.h}
+
+\subsection{Connected components}
+\verb@components(g)@ is iterative and assumes an undirected graph.
+It returns component IDs, representatives, sizes, and the count.
+Isolated vertices count. Connect representative $0$ to every other
+representative to add the minimum $c-1$ roads. The lower bound follows
+because one edge decreases the component count by at most one.
+Time $O(n+m)$, extra memory $O(n)$.
+For directed input this routine computes neither SCCs nor weak components;
+use SCC or explicitly ignore edge directions, respectively.
+\kactlimport{Components.h}
+
+\subsection{Grid BFS and time-dependent movement}
+\verb@grid_bfs(board,{{sr,sc}},'#')@ uses four-neighbor moves and treats
+all non-wall characters as passable. ID of $(r,c)$ is $rw+c$;
+recover $(r,c)$ as \verb@id/w,id%w@. Parents use these same IDs.
+For successive path cells, coordinate differences identify U/D/L/R.
+Time and memory $O(hw)$; no explicit adjacency lists are needed.
+A wall source is ignored. A source outside the grid is invalid.
+
+For spreading hazards, compute all hazard arrival times first with a
+multi-source BFS. In a \emph{separate constrained} player BFS, enter $v$
+at time $t$ only when legal, often $t<\mathit{hazard}[v]$.
+The helper below does not enforce hazard constraints. Simultaneous arrival
+may be forbidden. Recheck boundary escape and start-cell rules.
+\kactlimport{GridBFS.h}
+
+\section{Weighted paths and dependencies}
+\subsection{0--1 BFS}
+Use adjacency entries \verb@{neighbor,weight}@. A strict improvement with
+weight zero enters the deque front; weight one enters the back. A vertex
+may improve after its first discovery: a permanent visited flag is wrong.
+The returned parent chain is valid after checking distance $\ne\texttt{INF}$.
+Time $O(n+m)$, space $O(n+m)$ including queued entries.
+Example reduction: an allowed directed edge costs zero; traversing its
+reverse costs one. Use this only if the statement permits that move.
+% WeightedPaths.h follows the Dijkstra contract below.
+
+\subsection{Dijkstra}
+\verb@dijkstra(g,s)@ requires nonnegative weights and returns distances and
+parents. Ignore stale heap entries. The implementation skips candidate
+distances at least \texttt{INF} before adding, preventing that addition's
+overflow but leaving such distances unrepresentable.
+Time $O((n+m)\log(n+m+1))$, space $O(n+m)$.
+\begin{lstlisting}
+auto a = dijkstra(g, source);
+if (a.dist[target] == INF) {
+  /* unreachable */
+} else { /* answer a.dist[target] */ }
+\end{lstlisting}
+Zero-weight cycles are valid for distances. Counting shortest paths by
+adding ways during heap processing needs extra reasoning in their presence.
+For weighted path reconstruction, follow \texttt{parent} to $-1$ and reverse;
+\texttt{restore\_path} accepts the unweighted \texttt{Search} type only.
+\kactlimport{WeightedPaths.h}
+
+\subsection{Topological order and DAG DP}
+Kahn's algorithm repeatedly removes an indegree-zero vertex.
+\verb@topological_order(g)@ returns a full order, or empty on a cycle.
+Check \verb@order.size()==g.size()@, including the valid empty graph.
+Parallel directed edges contribute separately to indegrees.
+Time $O(n+m)$, space $O(n)$.
+
+Longest path from $s$: initialize $dp[s]=0$, others $-\infty$.
+In topological order, for reachable $u$, apply
+$dp[v]\gets\max(dp[v],dp[u]+w_{uv})$ and save its parent on improvement.
+Unreachable is different from length zero. For shortest DAG paths use
+minimum; for path counts use addition modulo $M$. Parallel edges count
+as separate paths unless deduplicated. Never apply DAG DP after rejecting
+a cyclic graph. An ordinary vertex index order is not a topological order.
+\kactlimport{TopoSort.h}
+
+\section{Connectivity and trees}
+\subsection{DSU and Kruskal}
+\verb@DSU(n)@ starts with singleton sets. \verb@unite(u,v)@ returns whether
+it merged sets; \verb@find(u)@ gives a representative and \verb@size(u)@
+the current set size. Representatives may change. Amortized time per
+operation $O(\alpha(n))$, memory $O(n)$. Arbitrary deletions need a different
+method; some offline deletion tasks become additions when reversed.
+
+\verb@kruskal(n,edges)@ accepts undirected \verb@Edge{u,v,w}@, stored once
+per edge. It returns selected edges, total weight, and remaining component
+count. Negative weights, parallel edges, and loops are allowed; loops
+never merge sets. Connected nonempty input has one component and $n-1$
+selected edges. Otherwise the answer is a minimum spanning \emph{forest}.
+Time $O(m\log m)$; prove that total weight fits \texttt{ll}.
+MST minimizes selected edge sum, not distances from a source.
+\kactlimport{DSUKruskal.h}
+
+\subsection{Iterative tree DP}
+\verb@root_tree(tree,root)@ assumes a nonempty connected undirected tree.
+It returns parents, depths, parent-before-child order, and subtree sizes.
+Root is its own parent; size includes the vertex itself. Reverse order is
+suitable for child-to-parent DP. Time and memory $O(n)$, no recursion stack.
+On cyclic input this merely gives a spanning tree: the caller must verify
+the tree assumption. Its order is not an Euler tour; subtree vertices need
+not form an interval. For range queries compute entry/exit times separately.
+
+Maximum independent set state: $T[u]$ selects $u$, $S[u]$ skips it.
+Initialize $T[u]=1$, $S[u]=0$. For each child $v$,
+\[
+T[u]\mathrel{+}=S[v],\qquad
+S[u]\mathrel{+}=\max(T[v],S[v]).
+\]
+Answer $\max(T[root],S[root])$. Child subtrees are independent because a tree
+has no cross edges. For weighted selection initialize $T[u]$ to its weight.
+Save the root decision; when reconstructing, selecting a parent forces every
+child skipped, otherwise choose each child's better state.
+
+\subsection{Binary lifting LCA}
+\verb@LCA a(info)@ uses the rooted tree data. \verb@a.jump(u,k)@ returns
+the $k$th ancestor or $-1$ above the root. \verb@a.query(u,v)@ is the lowest
+common ancestor. \verb@a.distance(u,v)@ counts edges, not weights.
+Preprocess $O(n\log n)$ time/memory, queries $O(\log n)$.
+For weighted trees, accumulate root distances separately and use
+$D[u]+D[v]-2D[\mathrm{lca}(u,v)]$. Cross-component forest queries are invalid.
+\kactlimport{TreeLCA.h}
+
+\section{Intervals and monotonicity}
+\subsection{Coordinate compression and prefix sums}
+\verb@compressed_values(a)@ sorts and removes duplicates.
+\verb@rank_of(values,x)@ is the lower-bound insertion index. It represents
+$x$ exactly only if $x$ occurs in the compressed list. Compression preserves
+order/equality, not distances. Keep original coordinates for lengths/areas.
+Build $O(n\log n)$, lookup $O(\log n)$.
+
+\verb@prefix_sums(a)@ gives $P[0]=0$, $P[i+1]=P[i]+a[i]$;
+interval sum $[l,r)$ is $P[r]-P[l]$. Negative entries are allowed.
+Build $O(n)$, query $O(1)$. Online updates invalidate static prefixes.
+\kactlimport{CompressionPrefix.h}
+
+\subsection{Offline difference array}
+Allocate \verb@vector<ll> diff(n+1)@.
+\verb@difference_add(diff,l,r,x)@ adds $x$ on $[l,r)$.
+After all updates, \verb@materialize_difference(diff)@ gives $n$ values.
+For an existing array, add these increments to it. Updates cost $O(1)$,
+materialization $O(n)$. The extra sentinel is needed when $r=n$.
+This method does not support interleaved queries without rebuilding.
+\kactlimport{DifferenceArray.h}
+
+\subsection{Sliding window}
+\verb@count_subarrays_at_most(a,k)@ requires all $a_i\ge0$ and counts
+nonempty contiguous subarrays of sum at most $k$. It returns zero for $k<0$.
+For each right endpoint remove left values until feasible; then $r-l+1$
+starts are valid. Both pointers move only forward: $O(n)$ time, $O(1)$ space.
+Exact sum $k$ equals $\mathrm{atMost}(k)-\mathrm{atMost}(k-1)$.
+With negative entries, this monotonicity fails. For arbitrary signed values
+and exact sum, count previous prefixes equal to $P-k$; initialize count of
+prefix zero to one and query before inserting the current prefix.
+\kactlimport{SlidingWindow.h}
+
+\subsection{Binary search on the answer}
+\verb@first_true(lo,hi,ok)@ searches nonnegative $[lo,hi)$ with a
+false-then-true predicate. It returns original $hi$ when no tested value
+works and never evaluates \verb@ok(hi)@. If $hi$ is a proven feasible
+sentinel, returning it is also a valid answer. State that convention.
+Time $O(\log(hi-lo+1)\cdot\mathrm{cost}(ok))$.
+
+Prove ``if capacity $x$ works, every larger capacity works'' before searching.
+A greedy feasibility routine needs a separate proof. Watch overflow inside
+\texttt{ok}; safe midpoint arithmetic does not protect products there.
+\kactlimport{BinarySearch.h}
+
+\section{Dynamic range structures}
+\subsection{Fenwick sums and order statistics}
+\verb@Fenwick(n)@ starts with zeros. \verb@add(i,d)@ adds at index $i$;
+\verb@prefix(r)@ sums $[0,r)$ and \verb@sum(l,r)@ sums $[l,r)$.
+Assignment requires \verb@add(i,newValue-oldValue)@ and updating the saved
+old value. Each operation costs $O(\log n)$, memory $O(n)$.
+Negative entries work for sums.
+
+\verb@lower_bound(k)@ requires $k>0$ and nonnegative represented entries.
+It returns the zero-based position whose inclusive prefix first reaches $k$,
+or $n$ if total $<k$. Frequencies $[0,2,0,3]$ give positions $1$ for ranks
+1--2, $3$ for ranks 3--5. Remove a selected item with \verb@add(pos,-1)@,
+keeping frequencies nonnegative.
+
+Inversions: scan left to right, query
+$seen-\mathrm{prefix}(rank+1)$, then add one at the current rank.
+Query-before-update excludes the current value; $rank+1$ excludes equals
+from the inversion count.
+\kactlimport{Fenwick.h}
+
+\subsection{Iterative segment tree}
+\verb@SegTree<T,Op>(a,identity)@ supports \verb@set(i,x)@ and
+\verb@query(l,r)@ on $[l,r)$. Build/storage $O(n)$, operations $O(\log n)$.
+The operation must be associative with a two-sided identity. Order is
+preserved, so commutativity is unnecessary. Empty range returns identity.
+\begin{lstlisting}
+SegTree<ll,Sum> sums(a,0LL);
+const ll HI = std::numeric_limits<ll>::max();
+SegTree<ll,Minimum> mins(a,HI);
+sums.set(i,x);
+ll answer = sums.query(l,r);
+\end{lstlisting}
+Identities: sum $0$, minimum $+\infty$, maximum $-\infty$, GCD $0$.
+The two example trees are independent; changing one does not change the other.
+A maximum-subarray node needs total, best prefix, best suffix, and best
+subarray, with consistent empty-subarray semantics. Scalar sums are insufficient.
+For range updates use lazy propagation with proved tag composition;
+this code supports point assignment only.
+\kactlimport{SegmentTree.h}
+
+\section{DP state and reconstruction}
+\subsection{A state before a template}
+Write: exact state meaning, transitions, base cases, impossible value,
+dependency order, state count times transitions, answer state, witness method.
+Merge histories only when their future legal choices and effects are identical.
+A DP with huge numeric capacity may still time out; consider value-based DP,
+meet-in-the-middle, or a smaller state before allocating it.
+
+\subsection{Worked 0--1 knapsack state}
+$D_i[c]$ is the maximum value using the first $i$ items with total weight
+\emph{at most} $c$. Base $D_0[c]=0$ and
+\[
+D_{i+1}[c]=\max(D_i[c],D_i[c-w_i]+v_i)
+\quad\text{when }w_i\le c.
+\]
+Otherwise keep $D_i[c]$. Compress to one row and scan capacities downward,
+so the right side still belongs to the previous item layer.
+For weights $[2,3,4]$, values $[4,5,7]$, capacity 5, answer 9 uses items
+of weight 2 and 3. Upward scanning would incorrectly reuse an item.
+
+\verb@knapsack01(w,v,C)@ permits nonnegative weights, including zero;
+\verb@knapsack_unbounded(w,v,C)@ requires strictly positive weights and scans
+upward to reuse items. Both maximize value at most capacity and allow taking
+nothing; time $O(nC)$, memory $O(C)$. Negative values can be skipped.
+A positive-value zero-weight unbounded item makes the optimum infinite.
+
+For \emph{exact} weight, set $D[0]=0$ and others $-\infty$, and skip
+unreachable predecessors. Zero initialization everywhere would invent
+reachable states. Counting uses addition instead of maximum and needs its
+own loop-order argument.
+
+\subsection{Reconstructing selected items}
+A mutable parent pointer in overwritten one-row DP can produce an invalid
+witness. Simple safe method: retain all rows $D_i[c]$. Starting from
+$(i,c)=(n,C)$, if $D_i[c]=D_{i-1}[c]$, skip item $i-1$; otherwise record it
+and set $c\gets c-w_{i-1}$. Decrease $i$ in either case.
+Zero-weight items remain safe because the item index decreases.
+This uses $O(nC)$ memory; if that is too large, use immutable predecessor
+records or a separately proved reconstruction scheme.
+\kactlimport{Knapsack.h}
+
+\subsection{Counting order and subsequences}
+Coins outside, sums ascending: unordered combinations. Sums outside,
+last coin inside: ordered sequences. With coins $\{1,2\}$ and total 3,
+there are 2 combinations but 3 ordered sequences. Deduplicate denominations
+unless equal values intentionally represent distinct types.
+
+\verb@lis_indices(a)@ reconstructs one longest \emph{strictly} increasing
+subsequence in $O(n\log n)$ time, $O(n)$ memory. Empty input returns empty.
+Tails store minimum achievable last values, not necessarily one actual
+subsequence; predecessor indices recover the witness.
+For nondecreasing subsequences, use \texttt{upper\_bound} instead of
+\texttt{lower\_bound}. Repeated equal values must not extend strict LIS.
+\kactlimport{LIS.h}
+
+
+\subsection{Digit patterns and remainder state}
+\verb@finals_dp::complete_digits(pattern,m)@ finds the lexicographically
+smallest completion divisible by positive $m$, or \texttt{nullopt}.
+The pattern is nonempty and contains digits or \texttt{?}. Leading zero is
+forbidden by default, even for one digit; pass \texttt{false} if zero or
+fixed-width leading zeros are valid. Time $O(10Lm)$, memory $O(Lm)$.
+Check that product before allocation; this is not suitable for huge $m$.
+
+State $can[pos][r]$ means the suffix can finish a number whose already read
+prefix has remainder $r$. Appending digit $d$ gives
+$r'=(10r+d)\bmod m$. Base $can[L][0]=1$, other final remainders false.
+Fill positions backward. Reconstruct forward by trying allowed digits
+0 through 9 and taking the first whose next state can finish. This is
+lexicographically smallest because every smaller feasible next digit is
+tried first, while the suffix table guarantees completion.
+For pattern \texttt{?2} and $m=7$, answer \texttt{42}.
+
+Counting integers $\le N$ is a different digit DP: add a \texttt{tight}
+state controlling the next allowed digit, and usually a \texttt{started}
+state for leading zeros. Do not treat these zeros as real digits when
+counting digit occurrences unless the statement requires it.
+\kactlimport{DigitDP.h}
+
+\section{Before submitting}
+Check edges versus vertices, inclusive versus exclusive endpoints, strict
+versus non-strict comparison, impossible states, and numeric bounds.
+Try unreachable target, start equal target, zero weight, repeated coordinate,
+empty range, last index, multiple test cases, and one item that fits twice.
+Tests verify code mechanics; a reduction still needs a proof.

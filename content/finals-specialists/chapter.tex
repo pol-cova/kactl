@@ -1,0 +1,217 @@
+\chapter{Specialists}
+\noindent Select the model first; copy only required snippets and dependencies.
+The contest prelude supplies \texttt{ll, vi, pii, rep, all, sz} and standard
+headers. SCC and 2-SAT use GNU C++ syntax. Globals such as \texttt{dfs, Time,
+P, mod} can collide: rename or namespace combined snippets. Header test status
+is upstream evidence, not a proof of your reduction.
+
+\begin{lstlisting}
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i,a,b) for(int i=(a);i<(b);++i)
+#define all(x) begin(x),end(x)
+#define sz(x) int((x).size())
+using ll=long long;
+using vi=vector<int>;
+using pii=pair<int,int>;
+\end{lstlisting}
+
+\section{Strings}
+\subsection{One pattern and borders}
+\texttt{match(text,pat)} returns zero-based occurrence starts, including overlaps;
+use a nonempty pattern. Its nul separator must be absent from the inputs.
+\texttt{pi(s)[i]} is the longest proper prefix ending at $i$.
+A repeated block has candidate length $p=n-\texttt{pi(s).back()}$;
+full repetition additionally requires $n\bmod p=0$. Time $O(n+m)$.
+\sourceimport{strings}{KMP.h}
+
+\subsection{Prefix matches at every suffix}
+\texttt{Z(s)[i]} is the common-prefix length of $s$ and suffix $i$;
+\texttt{z[0]=0}. Time/space $O(n)$. For pattern--separator--text matching,
+choose a separator outside both alphabets.
+\sourceimport{strings}{Zfunc.h}
+
+\subsection{Many fixed patterns}
+Construct \texttt{AhoCorasick ac(patterns)} from a mutable vector.
+Default alphabet is uppercase A--Z: change \texttt{first} and \texttt{alpha}
+before passing other symbols. Empty patterns are forbidden; duplicates allowed.
+\texttt{find(text)} returns the longest ending pattern index or $-1$ at each
+position. \texttt{findAll(patterns,text)} groups \emph{all} matches by starting
+position. Enumerating matches costs their output size. After construction,
+missing trie transitions have become failure-link transitions; do not treat
+\texttt{next} as a sparse trie. Build $O(26L)$, scan $O(n)$.
+\sourceimport{strings}{AhoCorasick.h}
+
+\subsection{Other source choices}
+\textbf{Hashing.h:} \texttt{HashInterval h(s); h.hashInterval(l,r)} hashes
+$[l,r)$ in $O(1)$ after $O(n)$ preprocessing. Uses arithmetic modulo $2^{64}-1$;
+collisions remain possible. Compare lengths; prefer KMP/Z for exact matching.
+\textbf{Manacher.h:} \texttt{p=manacher(s)} gives even lengths
+$2p[0][i]$ and odd lengths $2p[1][i]+1$.
+\textbf{SuffixArray.h:} \texttt{SuffixArray a(s)} includes empty suffix
+\texttt{a.sa[0]=n}; \texttt{a.lcp[i]} compares adjacent sorted suffixes,
+not arbitrary text positions. No nul input; ordinary ASCII avoids signed-char
+alphabet issues. Build $O(n\log n)$. These three sources are mapped, not printed here.
+
+\section{Directed constraints}
+\subsection{Strong components}
+\texttt{scc(g,callback)} writes global \texttt{comp[v]} and \texttt{ncomps}.
+Inter-component edges go from larger to smaller component IDs (reverse
+topological order). Copy callback blocks if storing them: the vector is reused.
+Build the condensation DAG after IDs exist. Recursive DFS: check stack capacity.
+Time $O(V+E)$.
+\sourceimport{graph}{SCC.h}
+
+\subsection{Boolean pairwise clauses}
+A literal is variable index $x$ or bitwise negation \texttt{\~{}x};
+\texttt{!x} is wrong. \texttt{either(a,b)} adds $a\lor b$;
+encode $a\Rightarrow b$ as \texttt{either(\~{}a,b)}.
+\texttt{setValue(a)} forces literal $a$ true.
+Read \texttt{values} only after \texttt{solve()} succeeds.
+\texttt{atMostOne} supplies no at-least-one constraint. General clauses of
+three or more literals do not fit 2-SAT. Time $O(V+E)$; its SCC code is internal.
+\sourceimport{graph}{2sat.h}
+
+\subsection{Undirected blocks: source contract}
+\textbf{BiconnectedComponents.h:} global \texttt{ed[u]} stores
+\texttt{(neighbor,edgeId)}. Insert an undirected edge twice with one shared ID;
+assign different IDs to parallel physical edges. \texttt{bicomps(callback)}
+reports edge blocks; vertices can belong to several blocks. Bridges are only
+recognized at the marked branch: add collection code there. Handle self-loops
+separately. Articulation vertices need additional root-child bookkeeping.
+Time $O(V+E)$. Source is not printed in this appendix.
+
+\section{Matching and capacities}
+\subsection{Bipartite matching}
+\texttt{g} contains neighbors of left vertices, indexed within the right side.
+Initialize \texttt{vi r(rightSize,-1)}; \texttt{hopcroftKarp(g,r)} returns
+cardinality and writes \texttt{r[right]=left}, or $-1$. Time $O(E\sqrt V)$.
+This is unweighted bipartite matching, not general or weighted matching.
+\sourceimport{graph}{HopcroftKarp.h}
+
+\subsection{Flow and residual cut}
+\texttt{Dinic f(n); f.addEdge(u,v,cap)} adds a directed edge with zero initial
+reverse capacity. Require nonnegative capacities, $s\ne t$, and bounded total
+flow fitting \texttt{ll}. Avoid self-loops unless adapting reverse indices.
+\texttt{f.calc(s,t)} mutates residual capacities and returns \emph{additional}
+flow. Afterwards \texttt{leftOfMinCut(v)} tests residual source reachability.
+\texttt{Edge.c} is residual capacity, \texttt{oc} original, \texttt{flow()}
+nonnegative net usage. Header bound $O(VE\log U)$; DFS is recursive.
+
+Matching: source$\to$left, compatible left$\to$right, right$\to$sink,
+all capacity one. Vertex capacity: split into in$\to$out. Infinite capacity
+must exceed every finite cut with a proved safe bound; do not use
+\texttt{LLONG\_MAX} blindly. Min-cost objectives require a different solver.
+This header exists in source but is omitted from the original default graph
+chapter; it is explicitly printed here.
+\sourceimport{graph}{Dinic.h}
+
+\section{Tree paths}
+\subsection{Ancestor jumps}
+Supply \texttt{parent[root]=root}, valid parent indices, and separate depths.
+\texttt{up=treeJump(parent)}, \texttt{jmp(up,v,k)},
+\texttt{lca(up,depth,u,v)}. Restrict jumps to supported bits/depth.
+Build/storage $O(n\log n)$, query $O(\log n)$.
+\sourceimport{graph}{BinaryLifting.h}
+
+\subsection{Heavy-light source contract}
+\textbf{HLD.h:} nonempty connected tree, root zero.
+\texttt{HLD<false>} stores vertices; \texttt{HLD<true>} stores edges at their
+deeper endpoints. \texttt{modifyPath(u,v,x)} adds $x$;
+\texttt{queryPath(u,v)} returns max, $O(\log^2 n)$.
+\texttt{querySubtree(v)} uses a half-open Euler interval, excluding $v$ in
+edge mode. Initialize values: LazySegmentTree's default is $-10^9$, not zero.
+Changing max to sum requires changing both layers. Noncommutative path
+aggregates require directional processing. Depends on LazySegmentTree and its
+BumpAllocator include. This longer source is not printed here.
+
+\section{Exact geometry and constructions}
+\subsection{Point operations}
+\texttt{a.cross(b,c)} is $(b-a)\times(c-a)$, positive left turn.
+For coordinate magnitude $B$, difference cross products can reach $8B^2$:
+bound before using \texttt{Point<ll>}. Widen \emph{before} subtraction/product.
+Integer points do not support fractional unit vectors or intersections exactly.
+Use squared distances for ordering, with overflow checked.
+\sourceimport{geometry}{Point.h}
+
+\subsection{Closed segment membership}
+Includes endpoints and degenerate segments. With floating coordinates, this
+exact equality test may need the source's distance-based alternative.
+\sourceimport{geometry}{OnSegment.h}
+
+\subsection{Segment intersection}
+Returns zero points for none, one for a single intersection, two for an overlap.
+Integer point output truncates a nonintegral proper intersection; intermediates
+include triple-coordinate products. For existence only, use orientation signs
+and on-segment cases without constructing coordinates. Compare signs rather
+than multiplying large cross products.
+\sourceimport{geometry}{SegmentIntersection.h}
+
+\subsection{Convex hull}
+Returns CCW vertices, removing intermediate collinear boundary points.
+Time $O(n\log n)$. Check size before subsequent hull operations: empty and
+all-collinear inputs are degenerate.
+\sourceimport{geometry}{ConvexHull.h}
+
+\subsection{Signed doubled area}
+Requires nonempty boundary-ordered polygon. Positive for CCW, negative clockwise;
+self-intersections give algebraic area. Accumulation needs a bound beyond one
+cross product. Keep doubled area integral for half-unit output.
+\sourceimport{geometry}{PolygonArea.h}
+
+\subsection{More geometry source contracts}
+\textbf{InsidePolygon.h:} \texttt{inPolygon(poly,p,strict=true)}, $O(n)$,
+simple polygon; false on boundary unless \texttt{strict=false}.
+\textbf{PointInsideHull.h:} \texttt{inHull(h,p,strict)}, $O(\log n)$,
+nonempty CCW convex hull with intermediate collinear points removed.
+\textbf{HullDiameter.h:} nonempty hull, same order/collinearity conventions,
+$O(n)$ after hull. \textbf{ClosestPair.h:} at least two points, $O(n\log n)$.
+These are source references, not printed code. Exact predicates and approximate
+coordinate constructions have different requirements; no universal EPS fixes both.
+
+\section{Offline queries and optimized DP}
+\subsection{Sweep contracts}
+Sort points/queries by one coordinate; Fenwick aggregates the other compressed
+coordinate. For $x\le X$, insert equal-$x$ points before queries; for $x<X$,
+query first. Strict predecessor DP often needs batched equal-coordinate updates.
+Compression preserves ordering, not actual lengths.
+
+\textbf{FenwickTree2d.h:} call \texttt{fakeUpdate(x,y)} for all possible update
+locations, then \texttt{init()} once. \texttt{query(X,Y)} sums $x<X,y<Y$;
+rectangle sums use four prefixes. Operations $O(\log^2 n)$.
+\textbf{MoQueries.h:} contains intentional callback placeholders.
+Implement \texttt{add,del,calc}; intervals $[l,r)$ start empty.
+The $O(n\sqrt q)$ movement estimate assumes cheap callbacks and a suitable
+block size; literal 350 is not universal. Both sources are mapped, not printed.
+
+\subsection{Maximum of lines}
+Use only after deriving $dp_i=\max_j(k_jx_i+b_j)+c_i$.
+\texttt{LineContainer lc; lc.add(k,b); lc.query(x)} returns a maximum;
+empty queries assert. Negate slopes/intercepts/results for minima with overflow
+checked. Arbitrary insertion/query order is allowed; time $O(\log n)$ amortized.
+Eligibility still controls whether to insert before or after querying.
+Products and internal breakpoint differences must fit \texttt{ll}.
+\sourceimport{data-structures}{LineContainer.h}
+
+\subsection{Small-state matrix powers}
+Zero-initialized \texttt{Matrix<T,N> A}; fill \texttt{A.d}.
+\texttt{(A\^{}k)*state} applies $k$ transitions to a column vector:
+rows are destinations, columns sources. Time $O(N^3\log k)$.
+Plain \texttt{ll} does not reduce modulo anything: use a modular numeric type
+or adapt arithmetic. Exponent zero returns identity.
+\sourceimport{data-structures}{Matrix.h}
+
+\subsection{Transform and recurrence source contracts}
+\textbf{FastFourierTransform.h:} \texttt{conv(vd,vd)} returns coefficient
+convolution, $O(N\log N)$ at padded power-of-two $N$.
+Sufficient rounded-integer precision bound:
+$(\sum a_i^2+\sum b_i^2)\log_2N<9\cdot10^{14}$.
+Round explicitly; do not promise exactness beyond the bound.
+\textbf{NumberTheoreticTransform.h:} exact modulo 998244353, inputs normalized,
+actual padded $N\le2^{23}$. This source pads \emph{strictly above} result size.
+Modular output is not exact integer output without a coefficient bound or CRT.
+Names such as \texttt{conv,mod} collide when mixing variants.
+\textbf{LinearRecurrence.h:} \texttt{linearRec(S,tr,k)} computes $S_k$ for
+$S_i=\sum_jS_{i-j-1}tr_j$, $O(d^2\log k)$. Source declares a mod-5 testing
+placeholder marked \texttt{exclude-line}; supply the intended modulus when
+copying. These longer sources are not printed here.

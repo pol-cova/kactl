@@ -1,13 +1,13 @@
 # Mexico finals companions
 
-Two references built around the team's reported weaknesses and the 2017-2025 Latin American regional research. The original KACTL notebook remains available unchanged.
+Two native KACTL landscape, three-column references built around the team's reported weaknesses and the 2017-2025 Latin American regional research. The original KACTL notebook remains available unchanged.
 
 | Book | Use it for | Printable file |
 |---|---|---|
-| [Math reasoning and formulas](math.md) | Exact arithmetic, divisibility, modular structure, counting, expectation, proofs, decimal representations, geometry predicates | [math-handbook.pdf](pdf/math-handbook.pdf) |
-| [Algorithms and implementations](implementations.md), with [specialist appendix](specialists.md) | Choosing and implementing graph/range/DP methods; contracts, examples, pitfalls; selected existing KACTL code | [implementation-handbook.pdf](pdf/implementation-handbook.pdf) |
+| [Math reference](../content/finals-math/chapter.tex) | Exact arithmetic, divisibility, modular structure, counting, expectation, proofs, decimal representations, geometry predicates | [math-handbook.pdf](pdf/math-handbook.pdf) |
+| [Implementations](../content/finals-implementations/chapter.tex), with [specialists](../content/finals-specialists/chapter.tex) | Choosing and implementing graph/range/DP methods; contracts, examples, pitfalls; selected existing KACTL code | [implementation-handbook.pdf](pdf/implementation-handbook.pdf) |
 
-Start with the recognition tables, then check the relevant API's assumptions. Both PDFs contain page-numbered contents and code module lookup. `include/core.hpp`, `include/math.hpp`, and `include/digit_dp.hpp` are the authoritative editable C++17 helpers. The printed source is generated directly from these files. Keep both books beside the original `kactl.pdf` for wider specialist coverage.
+Start with the recognition tables, then check the relevant API's assumptions. Both PDFs use the existing `content/tex/kactlpkg.sty`, three landscape columns, page-numbered contents, and KACTL code hashes. Notes and snippets are interleaved by topic. `include/core.hpp`, `include/math.hpp`, and `include/digit_dp.hpp` are the authoritative editable C++17 helpers. The printed source is generated directly from these files into annotated KACTL modules under `content/finals-math/` and `content/finals-implementations/`. Edit the native chapter files for contest prose; the longer Markdown files are background reading. Keep both books beside the original `kactl.pdf` for wider specialist coverage.
 
 ## Conventions
 
@@ -25,13 +25,14 @@ The material limits for the specific finals have not been supplied. These are fu
 From the repository root:
 
 ```sh
-python3 -m pip install -r handbooks/requirements.txt
-python3 handbooks/build.py
+make handbooks
 sh handbooks/test.sh
 SANITIZE=1 sh handbooks/test.sh
 ```
 
-Build requires Python and ReportLab, without LaTeX or network access after installation. Tests require a C++17 compiler; set `CXX=clang++` or `CXX=g++`. PDF output is in `handbooks/pdf/`. The existing `make kactl` target is unchanged.
+Build uses the same Python, pdflatex, LaTeX packages, shell escape, and GNU cpp hashing as the original KACTL. No ReportLab is used. On macOS, the builder can use installed `cpp-14` or another versioned GNU cpp for hashing. Tests require a C++17 compiler; set `CXX=clang++` or `CXX=g++`. PDF output is in `handbooks/pdf/`. The existing `make kactl` target is unchanged.
+
+Native main files: `content/finals-math.tex` and `content/finals-implementations.tex`. Each imports its `chapter.tex`; implementations also imports `content/finals-specialists/chapter.tex`. Use `python3 handbooks/build.py --generate-only` to refresh modules without compiling PDFs.
 
 The companion workflow builds both PDFs and runs the helper tests on pull requests. Its artifact is separate from the existing KACTL release artifact.
 

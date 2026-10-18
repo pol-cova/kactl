@@ -15,7 +15,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r handbooks/requirements.txt
+      - name: Install KACTL LaTeX dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-plain-generic
+      - run: python handbooks/build.py --generate-only
+      - run: git diff --exit-code -- content/finals-math content/finals-implementations
       - run: sh handbooks/test.sh
       - run: SANITIZE=1 sh handbooks/test.sh
       - run: python handbooks/build.py
