@@ -11,20 +11,27 @@
 #include "ModularArithmetic.h"
 
 namespace finals_math {
-// Prime p is a CALLER precondition; n<p. Constructor does not test primality.
+// Requires prime p and n<p; primality is unchecked.
 struct PrimeCombinations {
-    i64 p; std::vector<i64> fac,invfac;
-    PrimeCombinations(int n,i64 prime):p(prime) {
-        if(n<0||p<=1||n>=p)throw std::invalid_argument("need 0<=n<prime");
-        fac.resize(n+1,1); invfac.resize(n+1,1);
-        for(int i=1;i<=n;++i)fac[i]=mul_mod(fac[i-1],i,p);
-        invfac[n]=pow_mod(fac[n],p-2,p);
-        for(int i=n;i>0;--i)invfac[i-1]=mul_mod(invfac[i],i,p);
-    }
-    i64 choose(int n,int k)const {
-        if(n<0||n>=int(fac.size()))throw std::invalid_argument("choose range");
-        if(k<0||k>n)return 0;
-        return mul_mod(fac[n],mul_mod(invfac[k],invfac[n-k],p),p);
-    }
+	i64 p;
+	vl fac, invfac;
+	PrimeCombinations(int n, i64 prime) : p(prime) {
+		if (n < 0 || p <= 1 || n >= p)
+			throw invalid_argument("need 0<=n<prime");
+		fac.resize(n + 1, 1);
+		invfac.resize(n + 1, 1);
+		for (int i = 1; i <= n; ++i)
+			fac[i] = mul_mod(fac[i - 1], i, p);
+		invfac[n] = pow_mod(fac[n], p - 2, p);
+		for (int i = n; i > 0; --i)
+			invfac[i - 1] = mul_mod(invfac[i], i, p);
+	}
+	i64 choose(int n, int k) const {
+		if (n < 0 || n >= int(fac.size()))
+			throw invalid_argument("choose range");
+		if (k < 0 || k > n) return 0;
+		return mul_mod(fac[n],
+									 mul_mod(invfac[k], invfac[n - k], p), p);
+	}
 };
 } // namespace finals_math

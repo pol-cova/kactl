@@ -42,4 +42,6 @@ The research inventoried 116 problems across nine annual regional sets. Techniqu
 
 The math book emphasizes representation and proof because Fuzzy Factorization primarily requires an approximation argument. The implementation book includes basic traversal and shortest paths because the team reported limited graph experience. Advanced templates are retained for team members already able to adapt them.
 
+The print revision adds interval union, a smallest-missing-subset-sum example, and a nine-bit toggle-search recipe. Historical support and remaining gaps are recorded in [regional evidence](research/regional-evidence-round3.md) and [Mexico/Masters evidence](research/mexico-masters-round3.md). These are source-checked samples, not an exhaustive Masters/repechaje topic census.
+
 See [provenance](research/provenance.md), [coverage audit](research/coverage-audit.md), and [validation](VALIDATION.md). Original code notices are preserved. New authored companion prose and helper code are CC0, excluding original KACTL source excerpts, whose individual notices still apply.

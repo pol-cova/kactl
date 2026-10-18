@@ -11,45 +11,55 @@
 
 namespace finals_core {
 struct WeightedSearch {
-    std::vector<ll> dist;
-    std::vector<int> parent;
+	vl dist;
+	vi parent;
 };
-inline WeightedSearch zero_one_bfs(const WGraph& g, int source) {
-    int n = int(g.size());
-    WeightedSearch a{std::vector<ll>(n, INF), std::vector<int>(n,-1)};
-    std::deque<std::pair<ll,int>> q;
-    a.dist[source] = 0; q.push_front({0,source});
-    while (!q.empty()) {
-        auto [du,u] = q.front(); q.pop_front();
-        if (du != a.dist[u]) continue;
-        for (auto [v,w] : g[u]) {
-            assert(w == 0 || w == 1);
-            if (du+w < a.dist[v]) {
-                a.dist[v] = du+w; a.parent[v] = u;
-                if (w == 0) q.push_front({du,v});
-                else q.push_back({du+1,v});
-            }
-        }
-    }
-    return a;
+inline WeightedSearch zero_one_bfs(const WGraph &g,
+																	 int source) {
+	int n = int(g.size());
+	WeightedSearch a{vl(n, INF), vi(n, -1)};
+	deque<pair<ll, int>> q;
+	a.dist[source] = 0;
+	q.push_front({0, source});
+	while (!q.empty()) {
+		auto [du, u] = q.front();
+		q.pop_front();
+		if (du != a.dist[u]) continue;
+		for (auto [v, w] : g[u]) {
+			assert(w == 0 || w == 1);
+			if (du + w < a.dist[v]) {
+				a.dist[v] = du + w;
+				a.parent[v] = u;
+				if (w == 0)
+					q.push_front({du, v});
+				else
+					q.push_back({du + 1, v});
+			}
+		}
+	}
+	return a;
 }
-inline WeightedSearch dijkstra(const WGraph& g, int source) {
-    int n = int(g.size());
-    WeightedSearch a{std::vector<ll>(n, INF), std::vector<int>(n,-1)};
-    using Node = std::pair<ll,int>;
-    std::priority_queue<Node,std::vector<Node>,std::greater<Node>> q;
-    a.dist[source] = 0; q.push({0,source});
-    while (!q.empty()) {
-        auto [du,u] = q.top(); q.pop();
-        if (du != a.dist[u]) continue;
-        for (auto [v,w] : g[u]) {
-            assert(w >= 0);
-            if (w >= INF-du) continue;
-            if (du+w < a.dist[v]) {
-                a.dist[v] = du+w; a.parent[v] = u; q.push({du+w,v});
-            }
-        }
-    }
-    return a;
+inline WeightedSearch dijkstra(const WGraph &g, int source) {
+	int n = int(g.size());
+	WeightedSearch a{vl(n, INF), vi(n, -1)};
+	using Node = pair<ll, int>;
+	priority_queue<Node, vector<Node>, greater<Node>> q;
+	a.dist[source] = 0;
+	q.push({0, source});
+	while (!q.empty()) {
+		auto [du, u] = q.top();
+		q.pop();
+		if (du != a.dist[u]) continue;
+		for (auto [v, w] : g[u]) {
+			assert(w >= 0);
+			if (w >= INF - du) continue;
+			if (du + w < a.dist[v]) {
+				a.dist[v] = du + w;
+				a.parent[v] = u;
+				q.push({du + w, v});
+			}
+		}
+	}
+	return a;
 }
 } // namespace finals_core

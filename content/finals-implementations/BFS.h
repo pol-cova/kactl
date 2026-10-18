@@ -11,29 +11,35 @@
 
 namespace finals_core {
 struct Search {
-    std::vector<int> dist, parent;
+	vi dist, parent;
 };
-inline Search bfs(const Graph& g, const std::vector<int>& sources) {
-    int n = int(g.size());
-    Search a{std::vector<int>(n, -1), std::vector<int>(n, -1)};
-    std::queue<int> q;
-    for (int s : sources) if (a.dist[s] == -1) {
-        a.dist[s] = 0; q.push(s);
-    }
-    while (!q.empty()) {
-        int u = q.front(); q.pop();
-        for (int v : g[u]) if (a.dist[v] == -1) {
-            a.dist[v] = a.dist[u] + 1;
-            a.parent[v] = u; q.push(v);
-        }
-    }
-    return a;
+inline Search bfs(const Graph &g, const vi &sources) {
+	int n = int(g.size());
+	Search a{vi(n, -1), vi(n, -1)};
+	queue<int> q;
+	for (int s : sources)
+		if (a.dist[s] == -1) {
+			a.dist[s] = 0;
+			q.push(s);
+		}
+	while (!q.empty()) {
+		int u = q.front();
+		q.pop();
+		for (int v : g[u])
+			if (a.dist[v] == -1) {
+				a.dist[v] = a.dist[u] + 1;
+				a.parent[v] = u;
+				q.push(v);
+			}
+	}
+	return a;
 }
-inline std::vector<int> restore_path(const Search& a, int target) {
-    if (a.dist[target] == -1) return {};
-    std::vector<int> p;
-    for (int u = target; u != -1; u = a.parent[u]) p.push_back(u);
-    std::reverse(p.begin(), p.end());
-    return p;
+inline vi restore_path(const Search &a, int target) {
+	if (a.dist[target] == -1) return {};
+	vi p;
+	for (int u = target; u != -1; u = a.parent[u])
+		p.push_back(u);
+	reverse(p.begin(), p.end());
+	return p;
 }
 } // namespace finals_core

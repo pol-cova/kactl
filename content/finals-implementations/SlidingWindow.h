@@ -10,15 +10,24 @@
 #include "Prelude.h"
 
 namespace finals_core {
-// Number of nonempty subarrays with sum <= limit; all a[i] must be >= 0.
-inline ll count_subarrays_at_most(const std::vector<ll>& a, ll limit) {
-    if (limit < 0) return 0;
-    int l = 0; ll sum = 0, answer = 0;
-    for (int r = 0; r < int(a.size()); ++r) {
-        assert(a[r] >= 0); sum += a[r];
-        while (sum > limit) sum -= a[l++];
-        answer += r-l+1;
-    }
-    return answer;
+// Number of nonempty subarrays with sum <= limit; all a[i]
+// must be >= 0.
+inline ll count_subarrays_at_most(const vl &a, ll limit) {
+	if (limit < 0) return 0;
+	int l = 0;
+	ll sum = 0, answer = 0;
+	for (int r = 0; r < int(a.size()); ++r) {
+		assert(a[r] >= 0);
+		if (a[r] > limit) {
+			l = r + 1;
+			sum = 0;
+			continue;
+		}
+		// Shrink before adding: sum+a[r] may overflow ll.
+		while (sum > limit - a[r]) sum -= a[l++];
+		sum += a[r];
+		answer += r - l + 1;
+	}
+	return answer;
 }
 } // namespace finals_core

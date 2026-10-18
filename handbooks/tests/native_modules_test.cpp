@@ -1,3 +1,4 @@
+#define sz(x) int((x).size())
 #include "../../content/finals-math/Combinations.h"
 #include "../../content/finals-math/DecimalPeriod.h"
 #include "../../content/finals-math/EuclidCRT.h"
@@ -26,6 +27,7 @@
 #include "../../content/finals-implementations/TopoSort.h"
 #include "../../content/finals-implementations/TreeLCA.h"
 #include "../../content/finals-implementations/WeightedPaths.h"
+#include "../../content/finals-implementations/IntervalUnion.h"
 #include <cassert>
 #include <iostream>
 int main() {

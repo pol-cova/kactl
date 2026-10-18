@@ -10,19 +10,26 @@
 #include "Prelude.h"
 
 namespace finals_core {
-template<class T> std::vector<int> lis_indices(const std::vector<T>& a) {
-    std::vector<T> tails;
-    std::vector<int> ending, parent(a.size(),-1);
-    for (int i = 0; i < int(a.size()); ++i) {
-        auto it = std::lower_bound(tails.begin(),tails.end(),a[i]);
-        int p = int(it-tails.begin());
-        if (p > 0) parent[i] = ending[p-1];
-        if (p == int(tails.size())) { tails.push_back(a[i]); ending.push_back(i); }
-        else { tails[p] = a[i]; ending[p] = i; }
-    }
-    std::vector<int> result;
-    if (!ending.empty())
-        for (int i = ending.back(); i != -1; i = parent[i]) result.push_back(i);
-    std::reverse(result.begin(),result.end()); return result;
+template <class T> vi lis_indices(const vector<T> &a) {
+	vector<T> tails;
+	vi ending, parent(a.size(), -1);
+	for (int i = 0; i < int(a.size()); ++i) {
+		auto it = lower_bound(tails.begin(), tails.end(), a[i]);
+		int p = int(it - tails.begin());
+		if (p > 0) parent[i] = ending[p - 1];
+		if (p == int(tails.size())) {
+			tails.push_back(a[i]);
+			ending.push_back(i);
+		} else {
+			tails[p] = a[i];
+			ending[p] = i;
+		}
+	}
+	vi result;
+	if (!ending.empty())
+		for (int i = ending.back(); i != -1; i = parent[i])
+			result.push_back(i);
+	reverse(result.begin(), result.end());
+	return result;
 }
 } // namespace finals_core

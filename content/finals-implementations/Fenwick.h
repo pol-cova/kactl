@@ -11,34 +11,38 @@
 
 namespace finals_core {
 struct Fenwick {
-    int n; std::vector<ll> bit;
-    explicit Fenwick(int n_) : n(n_), bit(n_+1) {}
-    void add(int i, ll delta) {
-        assert(0 <= i && i < n);
-        for (++i; i <= n; i += i&-i) bit[i] += delta;
-    }
-    ll prefix(int r) const {
-        assert(0 <= r && r <= n);
-        ll answer = 0;
-        for (; r; r -= r&-r) answer += bit[r];
-        return answer;
-    }
-    ll sum(int l, int r) const {
-        assert(0 <= l && l <= r && r <= n);
-        return prefix(r)-prefix(l);
-    }
-    // Positive, one-based target; all represented values must be nonnegative.
-    int lower_bound(ll target) const {
-        assert(target > 0);
-        int pos = 0, step = 1; ll accumulated = 0;
-        while (step <= n/2) step *= 2;
-        for (; step; step /= 2) {
-            int next = pos+step;
-            if (next <= n && bit[next] < target-accumulated) {
-                accumulated += bit[next]; pos = next;
-            }
-        }
-        return pos; // n means no prefix reaches target.
-    }
+	int n;
+	vl bit;
+	explicit Fenwick(int n_) : n(n_), bit(n_ + 1) {}
+	void add(int i, ll delta) {
+		assert(0 <= i && i < n);
+		for (++i; i <= n; i += i & -i) bit[i] += delta;
+	}
+	ll prefix(int r) const {
+		assert(0 <= r && r <= n);
+		ll answer = 0;
+		for (; r; r -= r & -r) answer += bit[r];
+		return answer;
+	}
+	ll sum(int l, int r) const {
+		assert(0 <= l && l <= r && r <= n);
+		return prefix(r) - prefix(l);
+	}
+	// Positive, one-based target; all represented values must be
+	// nonnegative.
+	int lower_bound(ll target) const {
+		assert(target > 0);
+		int pos = 0, step = 1;
+		ll accumulated = 0;
+		while (step <= n / 2) step *= 2;
+		for (; step; step /= 2) {
+			int next = pos + step;
+			if (next <= n && bit[next] < target - accumulated) {
+				accumulated += bit[next];
+				pos = next;
+			}
+		}
+		return pos; // n means no prefix reaches target.
+	}
 };
 } // namespace finals_core

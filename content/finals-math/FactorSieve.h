@@ -10,33 +10,60 @@
 #include "Prelude.h"
 
 namespace finals_math {
-// Positive n; O(sqrt(n)) worst case. Suitable for n<=1e12 in modest counts.
-inline std::vector<std::pair<i64,int>> factor(i64 n) {
-    if(n<1) throw std::invalid_argument("positive factor input");
-    std::vector<std::pair<i64,int>> f;
-    for(i64 p=2;p<=n/p;p+=(p==2?1:2)) if(n%p==0) {
-        int e=0; do {n/=p;++e;}while(n%p==0); f.push_back({p,e});
-    }
-    if(n>1)f.push_back({n,1}); return f;
+// n>0; O(sqrt(n)).
+inline vector<pair<i64, int>> factor(i64 n) {
+	if (n < 1) throw invalid_argument("positive factor input");
+	vector<pair<i64, int>> f;
+	for (i64 p = 2; p <= n / p; p += (p == 2 ? 1 : 2))
+		if (n % p == 0) {
+			int e = 0;
+			do {
+				n /= p;
+				++e;
+			} while (n % p == 0);
+			f.push_back({p, e});
+		}
+	if (n > 1) f.push_back({n, 1});
+	return f;
 }
 inline i64 phi(i64 n) {
-    i64 ans=n; for(auto [p,e]:factor(n)) { (void)e; ans=ans/p*(p-1); } return ans;
+	i64 ans = n;
+	for (auto [p, e] : factor(n)) {
+		(void)e;
+		ans = ans / p * (p - 1);
+	}
+	return ans;
 }
 struct Sieve {
-    std::vector<int> spf, primes;
-    explicit Sieve(int n) {
-        if(n<0) throw std::invalid_argument("nonnegative sieve limit");
-        spf.resize(std::size_t(n)+1,0);
-        for(int i=2;i<=n;++i) {
-            if(!spf[i]) { spf[i]=i; primes.push_back(i); }
-            for(int p:primes) { if(p>spf[i] || p>n/i)break; spf[p*i]=p; }
-        }
-    }
-    std::vector<std::pair<i64,int>> factors(int x) const {
-        if(x<1 || x>=int(spf.size())) throw std::invalid_argument("sieve range");
-        std::vector<std::pair<i64,int>> f;
-        while(x>1) {int p=spf[x],e=0;do{x/=p;++e;}while(x>1&&spf[x]==p);f.push_back({p,e});}
-        return f;
-    }
+	vi spf, primes;
+	explicit Sieve(int n) {
+		if (n < 0)
+			throw invalid_argument("nonnegative sieve limit");
+		spf.resize(size_t(n) + 1, 0);
+		for (int i = 2; i <= n; ++i) {
+			if (!spf[i]) {
+				spf[i] = i;
+				primes.push_back(i);
+			}
+			for (int p : primes) {
+				if (p > spf[i] || p > n / i) break;
+				spf[p * i] = p;
+			}
+		}
+	}
+	vector<pair<i64, int>> factors(int x) const {
+		if (x < 1 || x >= int(spf.size()))
+			throw invalid_argument("sieve range");
+		vector<pair<i64, int>> f;
+		while (x > 1) {
+			int p = spf[x], e = 0;
+			do {
+				x /= p;
+				++e;
+			} while (x > 1 && spf[x] == p);
+			f.push_back({p, e});
+		}
+		return f;
+	}
 };
 } // namespace finals_math

@@ -1,287 +1,180 @@
 \chapter{Math}
 
-\section{Choose the reduction}
-Huge integer + allowed error: bound discarded digits before factoring.
-Many occurrences, values $\le V$: histogram/multiples, not all pairs.
-Decimal division: reduce the denominator, then remainder states.
-Sum over subarrays/pairs: count each feature's contribution.
-Repeated operations: seek an invariant; necessity is not sufficiency.
-Random process: indicators or expectation recurrence before simulation.
-
 \section{Exact arithmetic}
 \kactlimport{Prelude.h}
 \subsection{Floor, ceiling and bounds}
-C++ division truncates toward zero: $-7/3=-2$, but
-$\lfloor-7/3\rfloor=-3$. For $a\ge0,b>0$,
-$\lceil a/b\rceil=a/b+[a\bmod b\ne0]$; avoids overflow in $a+b-1$.
-For positive $d$, multiples in $[L,R]$ correspond to integer indices
-$[\lceil L/d\rceil,\lfloor R/d\rfloor]$; answer is zero if empty.
-
-Widen \emph{before} arithmetic: \texttt{i128(a)*b},
-\texttt{i128(b.x)-a.x}. Assignment to a wide result is too late.
-Signed 64-bit maximum is about $9.22\cdot10^{18}$.
-Bound the whole sum, not only a term: pair counts $O(n^2)$,
-all subarray sums $O(n^3 A)$ for $|a_i|\le A$.
-Helpers reject division by zero and an unrepresentable quotient.
-\texttt{i128} requires GCC/Clang; not arbitrary precision.
+\textbf{Use:} signed floor/ceiling division; multiples in $[L,R]$:
+$\max(0,\lfloor R/d\rfloor-\lceil L/d\rceil+1)$, $d>0$.
+\textbf{Pitfall:} C++ truncates toward zero. Widen \emph{before} multiplying
+or subtracting: \texttt{i128(a)*b}. Helpers throw for zero denominator or
+overflow; 128 bits is finite.
 \kactlimport{IntegerDivision.h}
 
 \subsection{Exact decimal input}
-For at most $k$ fractional places, store the text scaled by $10^k$.
-Cents: \texttt{12.05}$\to1205$, \texttt{3}$\to300$,
-\texttt{-0.07}$\to-7$. Read a string, not a \texttt{double}.
-Parser rejects excess fractional places; it does not round.
-No exponent notation or commas. Digit count excludes the sign;
-zero has one digit. Integer division by ten is exact at powers of ten;
-\texttt{log10} can misclassify a boundary.
+\textbf{Use:} \texttt{parse\_fixed(s,k)} stores $s10^k$ exactly;
+\texttt{digits10(x)} counts magnitude digits, including one for zero.
+\textbf{Requires:} $0\le k\le18$, integer part present, at most $k$
+fractional places, signed 64-bit result. No rounding/exponents/commas;
+read text, not \texttt{double}.
 \kactlimport{ExactDecimals.h}
 
 \section{Congruences}
 \subsection{Powers and inverses}
-Normalize residues into $[0,m)$, $m>0$.
-Addition/multiplication preserve congruence; division usually does not.
-An inverse of $a$ exists iff $\gcd(a,m)=1$.
-For prime $p$ and $p\nmid a$, $a^{-1}=a^{p-2}\pmod p$.
-Composite modulus: use extended Euclid.
-Example $3^{-1}=3\pmod8$, but $2^{-1}\pmod8$ does not exist.
-Binary powering: $O(\log e)$ time, $O(1)$ space, $e\ge0$.
-A widened product is needed even when both residues fit 64 bits.
-Our exponent-zero convention gives $0^0=1$ before reduction.
+\textbf{Use:} normalize, multiply and exponentiate modulo $m>0$;
+$O(\log e)$ power, $e\ge0$. $0^0=1$ before reduction.
+\textbf{Pitfall:} division requires $\gcd(a,m)=1$;
+$a^{-1}=a^{p-2}\pmod p$ requires prime $p$, $p\nmid a$.
 \kactlimport{ModularArithmetic.h}
 
 \subsection{Bezout and shared-factor CRT}
-Extended Euclid gives $ax+by=g=\gcd(a,b)$ in $O(\log\min(a,b))$.
-$ax+by=c$ has integer solutions iff $g\mid c$.
-From one solution $(x_0,y_0)$, all are
-$(x_0+t b/g,\ y_0-t a/g)$, $t\in\mathbb Z$.
-Use floor/ceiling to intersect bounds on $t$.
-If $a=b=0$, handle $c=0$ separately.
+$ax+by=g=\gcd(a,b)$; $ax+by=c$ solvable iff $g\mid c$.
+All solutions: $(x_0+tb/g,y_0-ta/g)$; intersect bounds using floor/ceiling.
+For $a=b=0$, handle $c=0$ separately.
 
-Merge $X\equiv a\pmod m$, $X\equiv b\pmod n$:
-$g=\gcd(m,n)$ must divide $b-a$. Put $X=a+mt$ and solve
-\[
- (m/g)t\equiv(b-a)/g\pmod{n/g}.
-\]
-Answer is unique modulo $\operatorname{lcm}(m,n)$.
-Example $(a,m)=(2,6),(b,n)=(5,9)$ gives $X=14\pmod{18}$;
-residue $4$ modulo $9$ is incompatible.
-Merge many equations one by one. Positive moduli; modulus one adds
-no restriction. Helper throws if the merged lcm exceeds 64 bits.
+\textbf{Use:} merge $X=a\pmod m$, $X=b\pmod n$ even with shared factors.
+$g\mid(b-a)$ required; solve $(m/g)t=(b-a)/g\pmod{n/g}$,
+then $X=a+mt$, modulo $\operatorname{lcm}(m,n)$.
+\textbf{Requires:} positive moduli; nonnegative Euclid inputs.
+Incompatible CRT returns \texttt{nullopt}; overflowing lcm throws.
 \kactlimport{EuclidCRT.h}
 
 \section{Prime exponents and counting values}
 \subsection{Factorization and totient}
-For $n=\prod p^{e_p}$,
+For $n=\prod p^{e_p}$:
 \[
- \tau(n)=\prod(e_p+1),\quad
- \sigma(n)=\prod(1+p+\cdots+p^{e_p}),
+\tau(n)=\prod(e_p+1),\quad \sigma(n)=\prod\sum_{j=0}^{e_p}p^j,
+\quad\phi(n)=n\prod_{p\mid n}(1-1/p).
 \]
-\[
- \phi(n)=n\prod_{p\mid n}(1-1/p).
-\]
-Example $72=2^3 3^2$: $\tau=12$, $\sigma=195$, $\phi=24$.
-For one, the empty products give all three values one.
-Generate divisors by extending old divisors with each power of a new prime.
-Geometric accumulation avoids division modulo a composite modulus.
-
-Trial division stops at $p\le n/p$, reducing $n$ as factors are removed;
-remaining $n>1$ is prime. Worst case $O(\sqrt n)$.
-A ten-digit core needs candidates only through $10^5$;
-repeated arbitrary 64-bit factorization needs a different algorithm.
-SPF sieve: $O(V)$ time/space; factor $x\le V$ in $O(\log x)$.
-Zero/negative inputs require separate definitions.
+\textbf{Use:} positive inputs; trial factorization $O(\sqrt n)$,
+SPF preprocessing $O(V)$ time/space, factor $x\le V$ in $O(\log x)$.
+\textbf{Pitfall:} repeated arbitrary 64-bit inputs need faster factorization;
+$n=1$ has empty factors. Bound divisor sums/products separately.
 \kactlimport{FactorSieve.h}
 
 \subsection{Histogram and exact gcd classes}
-For positive values $\le V$, let $f[x]$ count occurrences and
-$M[d]=\sum_{k\ge1}f[kd]$. All $M$ take $O(V\log V)$ time,
-$O(V)$ memory. Zero needs separate handling.
-For fixed $b$ and divisors $g\mid b$, process decreasing $g$:
+Positive values $\le V$: $f[x]=$ frequency,
+$M[d]=\sum_{k\ge1}f[kd]$; all $M$ cost $O(V\log V)$.
+For each fixed $b$, process divisors decreasing:
 \[
- E_b[g]=M[g]-\!\sum_{\substack{h\mid b,\ g\mid h\\h>g}} E_b[h].
+E_b[g]=M[g]-\!\sum_{\substack{h\mid b,\ g\mid h\\h>g}}E_b[h].
 \]
-Then $E_b[g]$ counts numerators with $\gcd(a,b)=g$ exactly.
-For values $[2,3,6,6]$, $b=6$: $E[6]=2,E[3]=1,E[2]=1,E[1]=0$.
-For ordered occurrence pairs multiply by $f[b]$.
-Nested divisor work needs its own bound, e.g. $\sum_b\tau(b)^2$;
-it is not automatically $O(V\log V)$.
+$E_b[g]$ counts $\gcd(a,b)=g$; ordered occurrence pairs multiply by $f[b]$.
+\textbf{Pitfall:} zero separately; divisor subtraction adds work
+(e.g. $\sum_b\tau(b)^2$).
 
 \section{Remainder states and decimals}
 \subsection{Digits as a small state}
-Append digit $d$ to remainder $r$ modulo $m$:
-$r'=(10r+d)\bmod m$. Widen $10r$ if needed.
-At the same position, equal remainder means the same possible suffixes
-when no other constraint distinguishes prefixes. Hence a digit-pattern DP
-uses $(\mathrm{position},r)$, with $O(10Lm)$ time for length $L$.
-Leading-zero rules and extra digit restrictions must enter transitions/state.
-Smallest reconstruction: suffix feasibility, then try digits in increasing
-order while retaining a feasible suffix. Counting and existence differ.
+Append $d$: $r'=(10r+d)\bmod m$.
+\textbf{Use:} DP $(\mathrm{position},r)$, $O(10Lm)$, only when equal states
+have identical legal suffixes. Add other distinguishing history to state.
+\textbf{Pitfall:} leading zeros; widen $10r$. Smallest reconstruction tries
+digits ascending with suffix feasibility, not counts alone.
 
 \subsection{Period and rational display}
-For $\gcd(a,m)=1$, multiplicative order $\operatorname{ord}_m(a)$
-is the smallest $k>0$ with $a^k\equiv1\pmod m$.
-It divides $\phi(m)$; equality need not hold.
-Start $k=\phi(m)$; for prime $p\mid k$, repeatedly divide by $p$
-when $a^{k/p}\equiv1\pmod m$. Factorization dominates large inputs.
-Example $\operatorname{ord}_9(10)=1$, while $\phi(9)=6$.
+$\operatorname{ord}_m(a)\mid\phi(m)$ for $m\ge2$, $\gcd(a,m)=1$.
+\textbf{Use:} start $k=\phi(m)$; divide prime factors $p$ while
+$a^{k/p}=1\pmod m$. Trial-factorization cost applies.
 
-For $a\ge0,b>0$, reduce $q=b/\gcd(a,b)=2^u5^v r$,
-$\gcd(r,10)=1$. Canonical displayed digit count (no point or overbar):
+Reduce $q=b/\gcd(a,b)=2^u5^v r$, $\gcd(r,10)=1$:
 \[
- D(a,b)=\mathrm{digits}(\lfloor a/b\rfloor)+\max(u,v)+P(r),
+D(a,b)=\mathrm{digits}(\lfloor a/b\rfloor)+\max(u,v)+P(r),
 \]
-where $P(1)=0$, else $P(r)=\operatorname{ord}_r(10)$.
-Reason: long division advances remainder by multiplication by ten;
-after the $2,5$ prefix, a repeated remainder requires $10^k\equiv1$.
-Do not count artificial trailing zeros or the alternative recurring-nine form.
-
-Examples: $1/4$: $1+2+0=3$; $1/6$: $1+1+1=3$;
-$3/14$: $1+1+6=8$; $41/4$: $2+2+0=4$.
-Zero has one integer digit.
-\emph{Displaying Decimals (2025 D):} separate fractional length by gcd
-classes; integer digits add one per threshold $a\ge10b,100b,\ldots$,
-answered with frequency suffix counts.
-For $[15,36,14]$, nine ordered lengths sum to $30$; expectation $10/3$.
-The single-fraction formula passed direct long-division checks;
-full maximum-size aggregation is not benchmarked here.
+$P(1)=0$, otherwise $P(r)=\operatorname{ord}_r(10)$.
+\textbf{Why:} long division removes the $2,5$ prefix; recurring remainders
+then require $10^k=1\pmod r$.
+\textbf{Requires:} $a\ge0,b>0$; canonical decimal, no point/overbar/trailing zeros.
+2025 D aggregation: gcd classes for fractions; suffix counts at
+$a\ge10b,100b,\ldots$ for integer digits. Maximum-size aggregation unbenchmarked.
 \kactlimport{DecimalPeriod.h}
 
 \section{Approximation as a construction}
 \subsection{Fuzzy Factorization (2025 F)}
-Allowed relative error $10^{-9}$ changes the task. If $X$ has more than ten
-digits, keep ten leading digits $m$ and discard $e$ places:
-\[
- X=m10^e+r,\quad 0\le r<10^e,\quad m\ge10^9.
-\]
-Choose $Y=m10^e$. Then
-\[
- \frac{|X-Y|}{X}<\frac1m\le10^{-9}.
-\]
-Factor only $m<10^{10}$; add $e$ to exponents of $2$ and $5$.
-Merge repeated primes. For at most ten digits choose $Y=X$.
-Time $O(|X|+\sqrt m)$; no huge integer arithmetic.
-
-Example $X=123456789012345$: $m=1234567890$, $e=5$,
-$m=2\cdot3^2\cdot5\cdot3607\cdot3803$.
-Thus $Y=2^6 3^2 5^6\cdot3607\cdot3803$.
-Discarded remainder $12345$ obeys $12345\cdot10^9\le X$.
-Tolerance $10^{-k}$ similarly permits $k+1$ leading digits, but verify
-factorization cost and output prime limits. Empty factor map means one;
-adapt the required output format. Positive input, no leading zeros.
+Keep ten leading digits: $X=m10^e+r$, $0\le r<10^e$, $m\ge10^9$.
+Choose $Y=m10^e$: $|X-Y|/X<1/m\le10^{-9}$.
+\textbf{Use:} factor $m<10^{10}$; add $e$ to exponents of $2,5$.
+At most ten digits: exact factorization. $O(|X|+\sqrt m)$.
+\textbf{Requires:} positive canonical decimal text. Empty map means one;
+merge primes and adapt output format. Different tolerance needs a new bound.
 \kactlimport{FuzzyFactorization.h}
 
 \section{Combinatorics}
-\subsection{Choose the sample objects}
-$A$ choices each followed by exactly $B$ choices give $AB$.
-If counts vary, sum them. Disjoint cases add; overlaps need correction.
-Ordered distinct $k$-tuples: $n!/(n-k)!$; unordered subsets:
-$\binom nk=n!/(k!(n-k)!)$; ordered repetition: $n^k$.
-Five people: president/secretary $20$, two-person committee $10$.
-Stars and bars: $k$ ordered bins, total $n$ identical items;
-nonempty $\binom{n-1}{k-1}$, empty allowed $\binom{n+k-1}{k-1}$.
-For $k\ge1$; upper capacities need additional reasoning.
-
-Pascal: $\binom nk=\binom{n-1}{k-1}+\binom{n-1}k$,
-edge values one. Works modulo any positive modulus: $O(n^2)$ time,
-$O(n)$ memory; update a single row in decreasing $k$.
-Prime factorial tables: $O(N+\log p)$ preprocessing, $O(1)$ queries,
-$O(N)$ memory. Require prime $p$ and $N<p$.
-At $N\ge p$, $N!$ is zero modulo $p$; composite moduli may fail earlier.
-The constructor trusts primality. No automatic Lucas/composite support.
+\subsection{Sample objects and binomial coefficients}
+Disjoint cases add; exactly $A$ choices then $B$ each multiply.
+Ordered distinct: $n!/(n-k)!$; subsets: $\binom nk$; ordered repetition: $n^k$.
+Stars/bars, $k\ge1$: nonempty bins $\binom{n-1}{k-1}$ ($n\ge k$);
+empty allowed $\binom{n+k-1}{k-1}$.
+Pascal: $\binom nk=\binom{n-1}{k-1}+\binom{n-1}k$ (any modulus).
+\textbf{Use:} factorial tables, $O(N+\log p)$ build, $O(1)$ query.
+\textbf{Requires:} prime $p$, $N<p$; primality unchecked. No Lucas/composite support.
 \kactlimport{Combinations.h}
 
 \subsection{Contributions and complements}
-Zero-based index $i$ appears in $(i+1)(n-i)$ subarrays, so
 \[
- \sum_{\mathrm{subarrays}}\sum a_i
- =\sum_i a_i(i+1)(n-i).
-\]
-Example $[2,1,3]$: $6+4+9=19$. Widen all products.
-For unordered pairs:
-\[
- \sum_{i<j}(a_i+a_j)=(n-1)\sum_i a_i,
+\sum_{\mathrm{subarrays}}\sum a_i=\sum_i a_i(i+1)(n-i),
 \]
 \[
- \sum_{i<j}(a_i-a_j)^2=n\sum_i a_i^2-(\sum_i a_i)^2.
+\sum_{i<j}(a_i+a_j)=(n-1)\sum a_i,
+\quad\sum_{i<j}(a_i-a_j)^2=n\sum a_i^2-(\sum a_i)^2.
 \]
-At least one good feature = total minus zero good features.
-A maximal bad run of length $L$ contributes $L(L+1)/2$ all-bad
-substrings. Circular input needs merged boundary runs and a separate
-all-bad case; the linear formula alone is insufficient.
+At least one good $=$ total $-$ zero good.
+Bad run length $L$: $L(L+1)/2$ all-bad substrings.
+\textbf{Pitfall:} wide products; circular boundaries/all-bad case separately.
 
 \subsection{Inversions and repeated copies}
-Inversion: $i<j$, $a_i>a_j$ strictly. Equal values do not count.
-Fenwick scan adds previously seen minus previous values $\le a_i$.
-Coordinate compression preserves comparisons; $O(n\log n)$ time/space $O(n)$.
-For $K$ copies of $S$:
+\textbf{Use:} strict inversions $i<j,a_i>a_j$; compression/Fenwick,
+$O(n\log n)$ time, $O(n)$ space. Equal values do not count.
 \[
- \mathrm{inv}(S^K)=K\,\mathrm{within}+\binom K2\,\mathrm{cross},
+\mathrm{inv}(S^K)=K\,\mathrm{within}+\binom K2\,\mathrm{cross}.
 \]
-where $\mathrm{cross}=\#\{(u,v):S_u>S_v\}$ without an index-order
-restriction inside one copy. Every earlier-copy position precedes every
-later-copy position. For $S=ba,K=3$, answer $3+3=6$.
-This is the decomposition in 2023 I. Use wide/modular products.
+$\mathrm{cross}=\#\{(u,v):S_u>S_v\}$ with no within-copy index restriction
+(2023 I). Widen/modularize products.
 \kactlimport{Inversions.h}
 
 \section{Probability and expectation}
-Uniform outcomes must be specified: ordered occurrence pairs with
-replacement number $N^2$, without replacement $N(N-1)$.
-Equal values may still be different occurrences.
 \[
- \mathbb E[X]=\sum_x x\Pr(X=x),\qquad
- \mathbb E[\sum I_j]=\sum\Pr(I_j=1).
+\mathbb E[X]=\sum_xx\Pr(X=x),\quad
+\mathbb E[\sum I_j]=\sum\Pr(I_j=1).
 \]
-Linearity needs no independence. Multiplying probabilities does:
-$\Pr(A\cap B)=\Pr(A)\Pr(B\mid A)$.
-Random permutation expected inversions: each pair has probability $1/2$,
-so $n(n-1)/4$. Expectation need not be a possible outcome.
+Linearity needs no independence; $\Pr(A\cap B)=\Pr(A)\Pr(B\mid A)$.
+Ordered occurrence pairs: $N^2$ with replacement, $N(N-1)$ without.
+$E=c+qE+\sum p_jE_j\Rightarrow E=(c+\sum p_jE_j)/(1-q)$, $q<1$.
+\textbf{Pitfall:} modular $A/B$ requires invertible reduced denominator;
+never convert rounded decimals. $\operatorname{Var}(X)=E[X^2]-E[X]^2$.
 
-Self loop: $E=c+qE+\sum_jp_jE_j$ gives
-$E=(c+\sum_jp_jE_j)/(1-q)$ for $q<1$.
-A permanent positive-cost self loop has infinite expectation.
-Modulo prime $p$, fraction $A/B$ means $A B^{-1}$ only if $p\nmid B$;
-reduce exact cancellations first if needed. A real finite expectation need
-not have an invertible modular denominator. Never modularize a decimal
-approximation. $\mathbb E[X^2]\ne\mathbb E[X]^2$ generally;
-$\operatorname{Var}(X)=\mathbb E[X^2]-\mathbb E[X]^2$.
+\section{Proof checks}
+Invariant: initialize, preserve, then prove sufficiency by construction.
+Termination: decreasing nonnegative integer. Binary search: monotone predicate.
+Greedy: feasibility-preserving exchange. Tiny brute force finds counterexamples.
+$\sum i=n(n+1)/2$;
+$\sum_{i=0}^kr^i=(r^{k+1}-1)/(r-1)$, $r\ne1$.
+Modular division needs cancellation/invertibility; error uses original denominator.
 
-\section{Proof and inequality checks}
-An invariant needs initial truth and preservation by every operation.
-Try sum, parity, weighted sum, gcd, multiset, order.
-Invariant equality is necessary; prove sufficiency by a construction.
-A decreasing nonnegative integer proves termination.
-Binary search needs a monotone predicate, not just a fast checker.
-Greedy needs an exchange preserving feasibility and not worsening cost.
-Brute-force tiny cases find counterexamples; passing them is not proof.
-
-Useful sums:
-$\sum_{i=1}^n i=n(n+1)/2$,
-$\sum_{i=0}^k r^i=(r^{k+1}-1)/(r-1)$ for $r\ne1$.
-Before modular division, cancel an exact factor or verify invertibility.
-For error bounds compare with the original denominator; check strict vs
-nonstrict inequalities and small inputs separately.
+\subsection{Greedy coverage: smallest missing subset sum}
+Positive integers sorted ascending; initially $R=0$ and every sum in $[0,R]$
+is reachable. If $x>R+1$, answer $R+1$; otherwise extend $R\gets R+x$.
+After all values answer $R+1$. Proof: old sums $[0,R]$ and sums using $x$,
+$[x,x+R]$, have no integer gap iff $x\le R+1$.
+Masters Mexico 2022 H; $O(n\log n)$; total plus one must fit.
+\begin{lstlisting}
+long long missing(vector<long long> a) {
+  sort(a.begin(), a.end());
+  long long next = 1;
+  for (auto x : a) {
+    assert(x > 0);
+    if (x > next) break;
+    next += x;
+  }
+  return next;
+}
+\end{lstlisting}
 
 \section{Integer geometry}
-For vectors $u,v$,
-$u\cdot v=u_xv_x+u_yv_y$,
+$u\cdot v=u_xv_x+u_yv_y$;
 $u\times v=u_xv_y-u_yv_x$.
-Dot zero: perpendicular (nonzero vectors); positive/negative: acute/obtuse.
-$\operatorname{orient}(A,B,C)=(B-A)\times(C-A)$:
-positive left, negative right, zero collinear.
-Compare squared distances; no square root needed.
-Twice triangle area is $|\operatorname{orient}|$.
-
-Point on segment: orientation zero and both coordinates within inclusive
-endpoint ranges. Degenerate $A=B$ works. Segment intersection: opposite
-orientation signs for both lines, plus on-segment zero cases; collinear
-segments reduce to interval overlap. Compare signs, do not multiply cross
-products. Polygon in boundary order:
-$2A=|\sum_i P_i\times P_{i+1}|$ for a simple polygon.
-Self intersections give algebraic area; sorting by $x$ is not boundary order.
-
-Helpers use 128-bit operations and require coordinate magnitudes
-$\le10^{18}$. Arbitrary full-range 64-bit coordinates can overflow even
-128 bits; polygon accumulation needs a separate bound in $n$.
-Integer predicates are exact; real intersections/distances need tolerances
-based on the statement, not a universal EPS.
+$\operatorname{orient}(A,B,C)=(B-A)\times(C-A)$: positive left, zero collinear.
+$2A_{\triangle}=|\operatorname{orient}|$; compare squared distances.
+\textbf{Use:} exact predicates; segment membership = collinear + inclusive bounds.
+Simple polygon in boundary order: $2A=|\sum P_i\times P_{i+1}|$.
+\textbf{Requires:} helper coordinates $|x|,|y|\le10^{18}$; polygon sum needs its own
+bound. Compare orientation signs, not multiplied crosses; no universal floating EPS.
 \kactlimport{IntegerGeometry.h}

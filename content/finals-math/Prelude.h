@@ -21,7 +21,10 @@
 #include <vector>
 
 namespace finals_math {
+using namespace std;
 using i64 = long long;
-using i128 = __int128_t; // GCC/Clang extension supported by our C++17 build.
+using vi = vector<int>;
+using vl = vector<i64>;
+using i128 = __int128_t; // GCC/Clang
 
 } // namespace finals_math

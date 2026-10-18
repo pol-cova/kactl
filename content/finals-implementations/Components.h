@@ -11,23 +11,30 @@
 
 namespace finals_core {
 struct Components {
-    int count = 0;
-    std::vector<int> id, representative, size;
+	int count = 0;
+	vi id, representative, size;
 };
-inline Components components(const Graph& g) {
-    Components a;
-    a.id.assign(g.size(), -1);
-    for (int s = 0; s < int(g.size()); ++s) if (a.id[s] == -1) {
-        int id = a.count++;
-        a.representative.push_back(s); a.size.push_back(0);
-        std::vector<int> st{s}; a.id[s] = id;
-        while (!st.empty()) {
-            int u = st.back(); st.pop_back(); ++a.size[id];
-            for (int v : g[u]) if (a.id[v] == -1) {
-                a.id[v] = id; st.push_back(v);
-            }
-        }
-    }
-    return a;
+inline Components components(const Graph &g) {
+	Components a;
+	a.id.assign(g.size(), -1);
+	for (int s = 0; s < int(g.size()); ++s)
+		if (a.id[s] == -1) {
+			int id = a.count++;
+			a.representative.push_back(s);
+			a.size.push_back(0);
+			vi st{s};
+			a.id[s] = id;
+			while (!st.empty()) {
+				int u = st.back();
+				st.pop_back();
+				++a.size[id];
+				for (int v : g[u])
+					if (a.id[v] == -1) {
+						a.id[v] = id;
+						st.push_back(v);
+					}
+			}
+		}
+	return a;
 }
 } // namespace finals_core

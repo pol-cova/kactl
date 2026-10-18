@@ -11,18 +11,23 @@
 #include "IntegerDivision.h"
 
 namespace finals_math {
-// Generic comparisons: counts i<j with a[i]>a[j], O(n log n), preserves input.
-inline i64 inversions(std::vector<i64> a) {
-    auto vals=a;
-    std::sort(vals.begin(),vals.end());
-    vals.erase(std::unique(vals.begin(),vals.end()),vals.end());
-    std::vector<i64> bit(vals.size()+1); i64 answer=0,seen=0;
-    for(i64 x:a) {
-        int k=int(std::lower_bound(vals.begin(),vals.end(),x)-vals.begin())+1;
-        i64 le=0; for(int j=k;j;j-=j&-j)le+=bit[j];
-        answer=narrow(i128(answer)+seen-le); ++seen;
-        for(int j=k;j<int(bit.size());j+=j&-j)++bit[j];
-    }
-    return answer;
+// Counts i<j with a[i]>a[j]; O(n log n); input unchanged.
+inline i64 inversions(vl a) {
+	auto vals = a;
+	sort(vals.begin(), vals.end());
+	vals.erase(unique(vals.begin(), vals.end()), vals.end());
+	vl bit(vals.size() + 1);
+	i64 answer = 0, seen = 0;
+	for (i64 x : a) {
+		int k = int(lower_bound(vals.begin(), vals.end(), x) -
+								vals.begin()) +
+						1;
+		i64 le = 0;
+		for (int j = k; j; j -= j & -j) le += bit[j];
+		answer = narrow(i128(answer) + seen - le);
+		++seen;
+		for (int j = k; j < int(bit.size()); j += j & -j) ++bit[j];
+	}
+	return answer;
 }
 } // namespace finals_math

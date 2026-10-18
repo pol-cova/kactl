@@ -11,12 +11,15 @@
 
 namespace finals_core {
 // Predicate is false, ..., false, true, ..., true on [lo,hi).
-template<class Pred> ll first_true(ll lo, ll hi, Pred ok) {
-    assert(0 <= lo && lo <= hi);
-    while (lo < hi) {
-        ll mid = lo+(hi-lo)/2;
-        if (ok(mid)) hi = mid; else lo = mid+1;
-    }
-    return lo; // Original hi if every tested position is false.
+template <class Pred> ll first_true(ll lo, ll hi, Pred ok) {
+	assert(0 <= lo && lo <= hi);
+	while (lo < hi) {
+		ll mid = lo + (hi - lo) / 2;
+		if (ok(mid))
+			hi = mid;
+		else
+			lo = mid + 1;
+	}
+	return lo; // Original hi if every tested position is false.
 }
 } // namespace finals_core

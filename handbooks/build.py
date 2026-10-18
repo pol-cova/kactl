@@ -12,7 +12,7 @@ MATH = ['IntegerDivision','ExactDecimals','ModularArithmetic','EuclidCRT',
         'FactorSieve','DecimalPeriod','Combinations','Inversions',
         'FuzzyFactorization','IntegerGeometry']
 CORE = ['BFS','Components','GridBFS','WeightedPaths','TopoSort','DSUKruskal',
-        'TreeLCA','CompressionPrefix','DifferenceArray','SlidingWindow',
+        'TreeLCA','CompressionPrefix','IntervalUnion','DifferenceArray','SlidingWindow',
         'BinarySearch','Fenwick','SegmentTree','Knapsack','LIS']
 MATH_DEPS = {'ExactDecimals':['IntegerDivision'],
              'EuclidCRT':['IntegerDivision','ModularArithmetic'],

@@ -11,31 +11,36 @@
 #include "BFS.h"
 
 namespace finals_core {
-// Four-neighbor grid; every character other than wall is traversable.
-inline Search grid_bfs(const std::vector<std::string>& grid,
-                const std::vector<std::pair<int, int>>& sources,
-                char wall = '#') {
-    int h = int(grid.size()), w = h ? int(grid[0].size()) : 0;
-    Search a{std::vector<int>(h*w, -1), std::vector<int>(h*w, -1)};
-    std::queue<int> q;
-    for (auto [r,c] : sources) {
-        assert(0 <= r && r < h && 0 <= c && c < w);
-        if (grid[r][c] != wall && a.dist[r*w+c] == -1) {
-            a.dist[r*w+c] = 0; q.push(r*w+c);
-        }
-    }
-    const int dr[] = {1,-1,0,0}, dc[] = {0,0,1,-1};
-    while (!q.empty()) {
-        int u = q.front(); q.pop();
-        int r = u/w, c = u%w;
-        for (int k = 0; k < 4; ++k) {
-            int nr = r+dr[k], nc = c+dc[k];
-            if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
-            int v = nr*w+nc;
-            if (grid[nr][nc] == wall || a.dist[v] != -1) continue;
-            a.dist[v] = a.dist[u]+1; a.parent[v] = u; q.push(v);
-        }
-    }
-    return a;
+// Four-neighbor grid; every character other than wall is
+// traversable.
+inline Search grid_bfs(const vector<string> &grid,
+											 const vector<pair<int, int>> &sources,
+											 char wall = '#') {
+	int h = int(grid.size()), w = h ? int(grid[0].size()) : 0;
+	Search a{vi(h * w, -1), vi(h * w, -1)};
+	queue<int> q;
+	for (auto [r, c] : sources) {
+		assert(0 <= r && r < h && 0 <= c && c < w);
+		if (grid[r][c] != wall && a.dist[r * w + c] == -1) {
+			a.dist[r * w + c] = 0;
+			q.push(r * w + c);
+		}
+	}
+	const int dr[] = {1, -1, 0, 0}, dc[] = {0, 0, 1, -1};
+	while (!q.empty()) {
+		int u = q.front();
+		q.pop();
+		int r = u / w, c = u % w;
+		for (int k = 0; k < 4; ++k) {
+			int nr = r + dr[k], nc = c + dc[k];
+			if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+			int v = nr * w + nc;
+			if (grid[nr][nc] == wall || a.dist[v] != -1) continue;
+			a.dist[v] = a.dist[u] + 1;
+			a.parent[v] = u;
+			q.push(v);
+		}
+	}
+	return a;
 }
 } // namespace finals_core

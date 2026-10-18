@@ -11,14 +11,22 @@
 
 namespace finals_math {
 inline i64 norm(i64 a, i64 m) {
-    if(m<=0) throw std::invalid_argument("positive modulus required");
-    a%=m; return a<0 ? a+m : a;
+	if (m <= 0)
+		throw invalid_argument("positive modulus required");
+	a %= m;
+	return a < 0 ? a + m : a;
 }
 inline i64 mul_mod(i64 a, i64 b, i64 m) {
-    return i64(i128(norm(a,m))*norm(b,m)%m);
+	return i64(i128(norm(a, m)) * norm(b, m) % m);
 }
-inline i64 pow_mod(i64 a, std::uint64_t e, i64 m) {
-    a=norm(a,m); i64 r=1%m;
-    while(e) { if(e&1) r=mul_mod(r,a,m); a=mul_mod(a,a,m); e>>=1; } return r;
+inline i64 pow_mod(i64 a, uint64_t e, i64 m) {
+	a = norm(a, m);
+	i64 r = 1 % m;
+	while (e) {
+		if (e & 1) r = mul_mod(r, a, m);
+		a = mul_mod(a, a, m);
+		e >>= 1;
+	}
+	return r;
 }
 } // namespace finals_math

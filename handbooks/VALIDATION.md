@@ -8,7 +8,7 @@ CXX=clang++ SANITIZE=1 sh handbooks/test.sh
 python3 handbooks/build.py
 ```
 
-All five test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
+All six test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
 
 ## Independent oracles and boundaries
 
@@ -21,14 +21,20 @@ All five test programs passed in optimized C++17 builds and with AddressSanitize
 
 The selected printed KACTL headers compile in the adapter. This does not claim that all existing KACTL algorithms were revalidated. Original upstream status comments remain upstream evidence.
 
-The fifth program, `native_modules_test.cpp`, compiles all generated module headers together and checks their dependency integration.
+`audit_test.cpp` adds full-width signed arithmetic, 2,000 sliding-window comparisons near `LLONG_MAX`, 1,000 interval-union comparisons, decimal endpoints, CRT overflow/modulus-one, Fenwick rank and digit-zero checks. The audit fixed pre-shrink window overflow and a DSU member-name collision with KACTL’s `sz` macro.
+
+The integration program, `native_modules_test.cpp`, compiles all generated module headers together and checks their dependency integration, including the `sz` macro. All 29 generated headers also compiled individually with KACTL macros and aliases under Clang C++17. Four helper oracle suites were additionally run against generated modules with sanitizers before the interval addition. The exact printed greedy example passed 1,000 exhaustive subset comparisons with sanitizers.
 
 ## PDF checks
 
-The final editions use native KACTL A4 landscape with three columns: 4 pages for math and 10 pages for implementations. They have page-numbered contents, code hashes, compact formulas, and source-derived code modules interleaved with contracts. The former portrait layout was replaced. Rendered pages were inspected for layout, code clipping, tables, and page furniture. Native builds finish without LaTeX errors, undefined references, or overfull-box warnings. All pages were rendered and inspected after disabling column stretching that caused code/prose overlap. PDF page boxes were verified as landscape. Math formulas use LaTeX notation; arithmetic is no longer interpreted as Markdown emphasis.
+The final editions use native KACTL A4 landscape with three columns: 3 pages for math and 8 pages for implementations. They have page-numbered contents, code hashes, compact formulas, and source-derived code modules interleaved with contracts. The former portrait layout was replaced. Rendered pages were inspected for layout, code clipping, tables, and page furniture. Native builds finish without LaTeX errors, undefined references, or overfull-box warnings. All pages were rendered and inspected after disabling column stretching that caused code/prose overlap. PDF page boxes were verified as landscape. Math formulas use LaTeX notation; arithmetic is no longer interpreted as Markdown emphasis.
 
 The source and build scripts are editable. Original KACTL headers are printed through the unchanged native preprocessor. Generated helper modules carry authorship, source, description and validation status metadata.
 
 ## Limits
 
 These are local oracle checks, not new online-judge acceptances. Full maximum-constraint Displaying Decimals aggregation is excluded. Recursive specialist snippets can need stack planning. Arithmetic and memory bounds remain part of each caller's contract. No full contest rehearsal or event-specific printed-material compliance has been claimed. CI configuration is provided; local tests alone do not establish that a remote workflow has completed.
+
+## Print and evidence revision
+
+Helper source lines fit 63 columns using two-space tab stops. Formatting is committed; builds do not require clang-format. Printed notes retain preconditions and costs while removing tutorial-length explanations. The regional and Mexico/Masters round-three reports distinguish primary-source examples from the older provisional regional classifications. Mexico/Masters coverage is a spot audit, not a complete historical corpus.

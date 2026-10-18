@@ -10,17 +10,21 @@
 #include "Prelude.h"
 
 namespace finals_core {
-template<class T> std::vector<T> compressed_values(std::vector<T> a) {
-    std::sort(a.begin(),a.end()); a.erase(std::unique(a.begin(),a.end()),a.end());
-    return a;
+template <class T> vector<T> compressed_values(vector<T> a) {
+	sort(a.begin(), a.end());
+	a.erase(unique(a.begin(), a.end()), a.end());
+	return a;
 }
-template<class T> int rank_of(const std::vector<T>& sorted_unique, const T& x) {
-    auto it = std::lower_bound(sorted_unique.begin(),sorted_unique.end(),x);
-    return int(it-sorted_unique.begin());
+template <class T>
+int rank_of(const vector<T> &sorted_unique, const T &x) {
+	auto it = lower_bound(sorted_unique.begin(),
+												sorted_unique.end(), x);
+	return int(it - sorted_unique.begin());
 }
-inline std::vector<ll> prefix_sums(const std::vector<ll>& a) {
-    std::vector<ll> p(a.size()+1);
-    for (int i = 0; i < int(a.size()); ++i) p[i+1] = p[i]+a[i];
-    return p;
+inline vl prefix_sums(const vl &a) {
+	vl p(a.size() + 1);
+	for (int i = 0; i < int(a.size()); ++i)
+		p[i + 1] = p[i] + a[i];
+	return p;
 }
 } // namespace finals_core

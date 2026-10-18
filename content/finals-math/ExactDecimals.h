@@ -11,34 +11,52 @@
 #include "IntegerDivision.h"
 
 namespace finals_math {
-// Exact fixed-point parse: optional sign; digits; optional dot and digits.
-// Requires at least one digit before '.', <= places fractional digits, 0<=places<=18.
-inline i64 parse_fixed(const std::string& s, int places) {
-    if (places<0 || places>18) throw std::invalid_argument("decimal places");
-    std::size_t j=0; bool neg=false;
-    if (j<s.size() && (s[j]=='+' || s[j]=='-')) neg=s[j++]=='-';
-    i128 value=0; int whole=0, frac=0;
-    const i128 cap=i128(std::numeric_limits<i64>::max())+1;
-    auto digit=[&](char c) {
-        if (c<'0'||c>'9') throw std::invalid_argument("decimal digit");
-        value=value*10+(c-'0');
-        if (value>cap) throw std::overflow_error("decimal value");
-    };
-    while(j<s.size() && s[j]!='.') { digit(s[j++]); ++whole; }
-    if(!whole) throw std::invalid_argument("integer part");
-    if(j<s.size()) {
-        ++j;
-        while(j<s.size()) { digit(s[j++]); ++frac; }
-    }
-    if(frac>places) throw std::invalid_argument("too many fractional digits");
-    while(frac++<places) {
-        value*=10;
-        if(value>cap) throw std::overflow_error("decimal value");
-    }
-    return narrow(neg ? -value : value);
+// Exact signed decimal; 0<=places<=18; excess digits rejected.
+inline i64 parse_fixed(const string &s, int places) {
+	if (places < 0 || places > 18)
+		throw invalid_argument("decimal places");
+	size_t j = 0;
+	bool neg = false;
+	if (j < s.size() && (s[j] == '+' || s[j] == '-'))
+		neg = s[j++] == '-';
+	i128 value = 0;
+	int whole = 0, frac = 0;
+	const i128 cap = i128(numeric_limits<i64>::max()) + 1;
+	auto digit = [&](char c) {
+		if (c < '0' || c > '9')
+			throw invalid_argument("decimal digit");
+		value = value * 10 + (c - '0');
+		if (value > cap) throw overflow_error("decimal value");
+	};
+	while (j < s.size() && s[j] != '.') {
+		digit(s[j++]);
+		++whole;
+	}
+	if (!whole) throw invalid_argument("integer part");
+	if (j < s.size()) {
+		++j;
+		while (j < s.size()) {
+			digit(s[j++]);
+			++frac;
+		}
+	}
+	if (frac > places)
+		throw invalid_argument("too many fractional digits");
+	while (frac++ < places) {
+		value *= 10;
+		if (value > cap) throw overflow_error("decimal value");
+	}
+	return narrow(neg ? -value : value);
 }
-inline int digits10(i64 x) { // Counts magnitude digits, including zero, excluding sign.
-    i128 v=x; if(v<0) v=-v;
-    int d=1; while(v>=10) { v/=10; ++d; } return d;
+// Magnitude digits: zero has one; sign excluded.
+inline int digits10(i64 x) {
+	i128 v = x;
+	if (v < 0) v = -v;
+	int d = 1;
+	while (v >= 10) {
+		v /= 10;
+		++d;
+	}
+	return d;
 }
 } // namespace finals_math

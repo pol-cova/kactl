@@ -10,11 +10,19 @@
 #include "Prelude.h"
 
 namespace finals_math {
-struct Point { i64 x,y; };
-// Coordinate magnitudes <=1e18; products/sums fit signed 128 bits under this bound.
-inline i128 orient(Point a,Point b,Point c) {
-    return (i128(b.x)-a.x)*(i128(c.y)-a.y)-(i128(b.y)-a.y)*(i128(c.x)-a.x);
+struct Point {
+	i64 x, y;
+};
+// |coordinate|<=1e18 keeps these predicates within i128.
+inline i128 orient(Point a, Point b, Point c) {
+	return (i128(b.x) - a.x) * (i128(c.y) - a.y) -
+				 (i128(b.y) - a.y) * (i128(c.x) - a.x);
 }
-inline i128 dot(Point a,Point b) {return i128(a.x)*b.x+i128(a.y)*b.y;}
-inline i128 dist2(Point a,Point b) {i128 x=i128(a.x)-b.x,y=i128(a.y)-b.y;return x*x+y*y;}
+inline i128 dot(Point a, Point b) {
+	return i128(a.x) * b.x + i128(a.y) * b.y;
+}
+inline i128 dist2(Point a, Point b) {
+	i128 x = i128(a.x) - b.x, y = i128(a.y) - b.y;
+	return x * x + y * y;
+}
 } // namespace finals_math

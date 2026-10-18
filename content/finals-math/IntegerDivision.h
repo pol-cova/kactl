@@ -11,21 +11,22 @@
 
 namespace finals_math {
 inline i64 narrow(i128 x) {
-    if (x < std::numeric_limits<i64>::min() || x > std::numeric_limits<i64>::max())
-        throw std::overflow_error("signed 64-bit result");
-    return static_cast<i64>(x);
+	if (x < numeric_limits<i64>::min() ||
+			x > numeric_limits<i64>::max())
+		throw overflow_error("signed 64-bit result");
+	return static_cast<i64>(x);
 }
-// b != 0; throws when the quotient cannot fit i64 (LLONG_MIN / -1).
+// Throws for b=0 or quotient overflow.
 inline i64 floor_div(i64 a, i64 b) {
-    if (!b) throw std::invalid_argument("zero denominator");
-    i128 x=a, y=b, q=x/y, r=x%y;
-    if (r && ((r<0)!=(y<0))) --q;
-    return narrow(q);
+	if (!b) throw invalid_argument("zero denominator");
+	i128 x = a, y = b, q = x / y, r = x % y;
+	if (r && ((r < 0) != (y < 0))) --q;
+	return narrow(q);
 }
 inline i64 ceil_div(i64 a, i64 b) {
-    if (!b) throw std::invalid_argument("zero denominator");
-    i128 x=a, y=b, q=x/y, r=x%y;
-    if (r && ((r<0)==(y<0))) ++q;
-    return narrow(q);
+	if (!b) throw invalid_argument("zero denominator");
+	i128 x = a, y = b, q = x / y, r = x % y;
+	if (r && ((r < 0) == (y < 0))) ++q;
+	return narrow(q);
 }
 } // namespace finals_math

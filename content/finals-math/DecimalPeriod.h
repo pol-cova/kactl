@@ -13,18 +13,37 @@
 #include "FactorSieve.h"
 
 namespace finals_math {
-inline i64 order_mod(i64 a,i64 m) { // m>=2, gcd(a,m)=1; trial division cost applies.
-    if(m<2 || std::gcd(norm(a,m),m)!=1) throw std::invalid_argument("order requires a unit");
-    i64 k=phi(m);
-    for(auto [p,e]:factor(k)) { (void)e; while(k%p==0&&pow_mod(a,k/p,m)==1)k/=p; }
-    return k;
+inline i64 order_mod(
+		i64 a,
+		i64 m) { // m>=2, gcd(a,m)=1; trial division cost applies.
+	if (m < 2 || gcd(norm(a, m), m) != 1)
+		throw invalid_argument("order requires a unit");
+	i64 k = phi(m);
+	for (auto [p, e] : factor(k)) {
+		(void)e;
+		while (k % p == 0 && pow_mod(a, k / p, m) == 1) k /= p;
+	}
+	return k;
 }
-struct DecimalShape { int integer_digits, nonrepeating; i64 period; };
+struct DecimalShape {
+	int integer_digits, nonrepeating;
+	i64 period;
+};
 // a>=0, b>=1; period computation may be costly.
-inline DecimalShape decimal_shape(i64 a,i64 b) {
-    if(a<0||b<1) throw std::invalid_argument("nonnegative fraction");
-    i64 q=b/std::gcd(a,b); int u=0,v=0;
-    while(q%2==0) {q/=2;++u;} while(q%5==0) {q/=5;++v;}
-    return {digits10(a/b),std::max(u,v),q==1?0:order_mod(10,q)};
+inline DecimalShape decimal_shape(i64 a, i64 b) {
+	if (a < 0 || b < 1)
+		throw invalid_argument("nonnegative fraction");
+	i64 q = b / gcd(a, b);
+	int u = 0, v = 0;
+	while (q % 2 == 0) {
+		q /= 2;
+		++u;
+	}
+	while (q % 5 == 0) {
+		q /= 5;
+		++v;
+	}
+	return {digits10(a / b), max(u, v),
+					q == 1 ? 0 : order_mod(10, q)};
 }
 } // namespace finals_math

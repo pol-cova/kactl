@@ -20,10 +20,13 @@
 #include <vector>
 
 namespace finals_core {
+using namespace std;
 using ll = long long;
-using Graph = std::vector<std::vector<int>>;
-using WGraph = std::vector<std::vector<std::pair<int, ll>>>;
-constexpr ll INF = std::numeric_limits<ll>::max() / 4;
+using vi = vector<int>;
+using vl = vector<ll>;
+using Graph = vector<vi>;
+using WGraph = vector<vector<pair<int, ll>>>;
+constexpr ll INF = numeric_limits<ll>::max() / 4;
 
 
 } // namespace finals_core

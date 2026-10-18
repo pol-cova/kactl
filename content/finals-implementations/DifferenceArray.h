@@ -10,14 +10,19 @@
 #include "Prelude.h"
 
 namespace finals_core {
-inline void difference_add(std::vector<ll>& diff, int l, int r, ll value) {
-    assert(0 <= l && l <= r && r < int(diff.size()));
-    diff[l] += value; diff[r] -= value;
+inline void difference_add(vl &diff, int l, int r, ll value) {
+	assert(0 <= l && l <= r && r < int(diff.size()));
+	diff[l] += value;
+	diff[r] -= value;
 }
-inline std::vector<ll> materialize_difference(const std::vector<ll>& diff) {
-    assert(!diff.empty());
-    std::vector<ll> a(diff.size()-1); ll cur = 0;
-    for (int i = 0; i < int(a.size()); ++i) { cur += diff[i]; a[i] = cur; }
-    return a;
+inline vl materialize_difference(const vl &diff) {
+	assert(!diff.empty());
+	vl a(diff.size() - 1);
+	ll cur = 0;
+	for (int i = 0; i < int(a.size()); ++i) {
+		cur += diff[i];
+		a[i] = cur;
+	}
+	return a;
 }
 } // namespace finals_core

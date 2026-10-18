@@ -11,50 +11,62 @@
 
 namespace finals_core {
 struct TreeInfo {
-    std::vector<int> parent, depth, order, subtree;
+	vi parent, depth, order, subtree;
 };
-inline TreeInfo root_tree(const Graph& tree, int root = 0) {
-    int n = int(tree.size());
-    assert(n > 0 && 0 <= root && root < n);
-    TreeInfo t{std::vector<int>(n,-1),std::vector<int>(n),{},std::vector<int>(n,1)};
-    t.parent[root] = root; t.order.push_back(root);
-    for (int i = 0; i < int(t.order.size()); ++i) {
-        int u = t.order[i];
-        for (int v : tree[u]) if (t.parent[v] == -1) {
-            t.parent[v] = u; t.depth[v] = t.depth[u]+1; t.order.push_back(v);
-        }
-    }
-    assert(int(t.order.size()) == n);
-    for (int i = n-1; i > 0; --i) {
-        int u = t.order[i]; t.subtree[t.parent[u]] += t.subtree[u];
-    }
-    return t;
+inline TreeInfo root_tree(const Graph &tree, int root = 0) {
+	int n = int(tree.size());
+	assert(n > 0 && 0 <= root && root < n);
+	TreeInfo t{vi(n, -1), vi(n), {}, vi(n, 1)};
+	t.parent[root] = root;
+	t.order.push_back(root);
+	for (int i = 0; i < int(t.order.size()); ++i) {
+		int u = t.order[i];
+		for (int v : tree[u])
+			if (t.parent[v] == -1) {
+				t.parent[v] = u;
+				t.depth[v] = t.depth[u] + 1;
+				t.order.push_back(v);
+			}
+	}
+	assert(int(t.order.size()) == n);
+	for (int i = n - 1; i > 0; --i) {
+		int u = t.order[i];
+		t.subtree[t.parent[u]] += t.subtree[u];
+	}
+	return t;
 }
 struct LCA {
-    std::vector<std::vector<int>> up;
-    std::vector<int> depth;
-    explicit LCA(const TreeInfo& t) : depth(t.depth) {
-        int n = int(depth.size()), levels = 1;
-        assert(n > 0);
-        while ((1LL << levels) <= n) ++levels;
-        up.assign(levels,std::vector<int>(n)); up[0] = t.parent;
-        for (int k = 1; k < levels; ++k)
-            for (int u = 0; u < n; ++u) up[k][u] = up[k-1][up[k-1][u]];
-    }
-    int jump(int u, int steps) const {
-        if (steps < 0 || steps > depth[u]) return -1;
-        for (int k = 0; k < int(up.size()); ++k) if ((steps >> k)&1) u = up[k][u];
-        return u;
-    }
-    int query(int u, int v) const {
-        if (depth[u] < depth[v]) std::swap(u,v);
-        u = jump(u,depth[u]-depth[v]);
-        if (u == v) return u;
-        for (int k = int(up.size())-1; k >= 0; --k) if (up[k][u] != up[k][v]) {
-            u = up[k][u]; v = up[k][v];
-        }
-        return up[0][u];
-    }
-    int distance(int u, int v) const { return depth[u]+depth[v]-2*depth[query(u,v)]; }
+	vector<vi> up;
+	vi depth;
+	explicit LCA(const TreeInfo &t) : depth(t.depth) {
+		int n = int(depth.size()), levels = 1;
+		assert(n > 0);
+		while ((1LL << levels) <= n) ++levels;
+		up.assign(levels, vi(n));
+		up[0] = t.parent;
+		for (int k = 1; k < levels; ++k)
+			for (int u = 0; u < n; ++u)
+				up[k][u] = up[k - 1][up[k - 1][u]];
+	}
+	int jump(int u, int steps) const {
+		if (steps < 0 || steps > depth[u]) return -1;
+		for (int k = 0; k < int(up.size()); ++k)
+			if ((steps >> k) & 1) u = up[k][u];
+		return u;
+	}
+	int query(int u, int v) const {
+		if (depth[u] < depth[v]) swap(u, v);
+		u = jump(u, depth[u] - depth[v]);
+		if (u == v) return u;
+		for (int k = int(up.size()) - 1; k >= 0; --k)
+			if (up[k][u] != up[k][v]) {
+				u = up[k][u];
+				v = up[k][v];
+			}
+		return up[0][u];
+	}
+	int distance(int u, int v) const {
+		return depth[u] + depth[v] - 2 * depth[query(u, v)];
+	}
 };
 } // namespace finals_core

@@ -11,28 +11,49 @@
 
 namespace finals_core {
 struct DSU {
-    std::vector<int> p, sz;
-    explicit DSU(int n) : p(n), sz(n,1) { std::iota(p.begin(),p.end(),0); }
-    int find(int u) {
-        while (u != p[u]) { p[u] = p[p[u]]; u = p[u]; }
-        return u;
-    }
-    bool unite(int u, int v) {
-        u = find(u); v = find(v);
-        if (u == v) return false;
-        if (sz[u] < sz[v]) std::swap(u,v);
-        p[v] = u; sz[u] += sz[v]; return true;
-    }
-    int size(int u) { return sz[find(u)]; }
+	vi p, sizes;
+	explicit DSU(int n) : p(n), sizes(n, 1) {
+		iota(p.begin(), p.end(), 0);
+	}
+	int find(int u) {
+		while (u != p[u]) {
+			p[u] = p[p[u]];
+			u = p[u];
+		}
+		return u;
+	}
+	bool unite(int u, int v) {
+		u = find(u);
+		v = find(v);
+		if (u == v) return false;
+		if (sizes[u] < sizes[v]) swap(u, v);
+		p[v] = u;
+		sizes[u] += sizes[v];
+		return true;
+	}
+	int size(int u) { return sizes[find(u)]; }
 };
-struct Edge { int u,v; ll w; };
-struct MST { ll weight = 0; int components = 0; std::vector<Edge> edges; };
-inline MST kruskal(int n, std::vector<Edge> edges) {
-    std::sort(edges.begin(),edges.end(),[](Edge a,Edge b){ return a.w < b.w; });
-    DSU d(n); MST a; a.components = n;
-    for (Edge e : edges) if (d.unite(e.u,e.v)) {
-        a.weight += e.w; a.edges.push_back(e); --a.components;
-    }
-    return a;
+struct Edge {
+	int u, v;
+	ll w;
+};
+struct MST {
+	ll weight = 0;
+	int components = 0;
+	vector<Edge> edges;
+};
+inline MST kruskal(int n, vector<Edge> edges) {
+	sort(edges.begin(), edges.end(),
+			 [](Edge a, Edge b) { return a.w < b.w; });
+	DSU d(n);
+	MST a;
+	a.components = n;
+	for (Edge e : edges)
+		if (d.unite(e.u, e.v)) {
+			a.weight += e.w;
+			a.edges.push_back(e);
+			--a.components;
+		}
+	return a;
 }
 } // namespace finals_core

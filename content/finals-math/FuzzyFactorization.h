@@ -11,15 +11,23 @@
 #include "FactorSieve.h"
 
 namespace finals_math {
-// Positive canonical decimal input (no leading zero); factor the ten-digit prefix,
-// then account for trailing powers of ten. Empty factors means Y=1.
-inline std::map<i64,int> fuzzy_factors(const std::string& s) {
-    if(s.empty()||s[0]=='0')throw std::invalid_argument("positive canonical decimal");
-    for(char c:s)if(c<'0'||c>'9')throw std::invalid_argument("decimal digits");
-    i64 m=0; int keep=int(std::min<std::size_t>(10,s.size()));
-    for(int i=0;i<keep;++i)m=m*10+s[i]-'0';
-    int e=int(s.size())-keep; std::map<i64,int> f;
-    for(auto [p,k]:factor(m))f[p]=k;
-    if(e) {f[2]+=e;f[5]+=e;} return f;
+// Positive decimal, no leading zero; empty factors means Y=1.
+inline map<i64, int> fuzzy_factors(const string &s) {
+	if (s.empty() || s[0] == '0')
+		throw invalid_argument("positive canonical decimal");
+	for (char c : s)
+		if (c < '0' || c > '9')
+			throw invalid_argument("decimal digits");
+	i64 m = 0;
+	int keep = int(min<size_t>(10, s.size()));
+	for (int i = 0; i < keep; ++i) m = m * 10 + s[i] - '0';
+	int e = int(s.size()) - keep;
+	map<i64, int> f;
+	for (auto [p, k] : factor(m)) f[p] = k;
+	if (e) {
+		f[2] += e;
+		f[5] += e;
+	}
+	return f;
 }
 } // namespace finals_math

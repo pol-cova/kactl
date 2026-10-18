@@ -10,27 +10,28 @@
 #include "Prelude.h"
 
 namespace finals_core {
-// Max value with total weight <= capacity. Taking no items is allowed.
-inline ll knapsack01(const std::vector<int>& weight,
-                     const std::vector<ll>& value, int capacity) {
-    assert(weight.size() == value.size() && capacity >= 0);
-    std::vector<ll> dp(capacity+1);
-    for (int i = 0; i < int(weight.size()); ++i) {
-        assert(weight[i] >= 0);
-        for (int c = capacity; c >= weight[i]; --c)
-            dp[c] = std::max(dp[c],dp[c-weight[i]]+value[i]);
-    }
-    return dp[capacity];
+// Max value with total weight <= capacity. Taking no items is
+// allowed.
+inline ll knapsack01(const vi &weight, const vl &value,
+										 int capacity) {
+	assert(weight.size() == value.size() && capacity >= 0);
+	vl dp(capacity + 1);
+	for (int i = 0; i < int(weight.size()); ++i) {
+		assert(weight[i] >= 0);
+		for (int c = capacity; c >= weight[i]; --c)
+			dp[c] = max(dp[c], dp[c - weight[i]] + value[i]);
+	}
+	return dp[capacity];
 }
-inline ll knapsack_unbounded(const std::vector<int>& weight,
-                            const std::vector<ll>& value, int capacity) {
-    assert(weight.size() == value.size() && capacity >= 0);
-    std::vector<ll> dp(capacity+1);
-    for (int i = 0; i < int(weight.size()); ++i) {
-        assert(weight[i] > 0);
-        for (int c = weight[i]; c <= capacity; ++c)
-            dp[c] = std::max(dp[c],dp[c-weight[i]]+value[i]);
-    }
-    return dp[capacity];
+inline ll knapsack_unbounded(const vi &weight, const vl &value,
+														 int capacity) {
+	assert(weight.size() == value.size() && capacity >= 0);
+	vl dp(capacity + 1);
+	for (int i = 0; i < int(weight.size()); ++i) {
+		assert(weight[i] > 0);
+		for (int c = weight[i]; c <= capacity; ++c)
+			dp[c] = max(dp[c], dp[c - weight[i]] + value[i]);
+	}
+	return dp[capacity];
 }
 } // namespace finals_core
