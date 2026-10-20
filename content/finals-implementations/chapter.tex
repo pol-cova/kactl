@@ -1,0 +1,195 @@
+\chapter{Implementations}
+
+\section{Choose the model first}
+Store full state. BFS: unit edges; 0--1 BFS: weights $0/1$; Dijkstra:
+nonnegative; DAG DP: acyclic; Bellman--Ford: general negative edges.
+Components: undirected connectivity; DSU: additions; Kruskal: spanning forest;
+SCC: directed mutual reachability.
+
+Choose by asking what one legal move costs and what information determines
+the future. If every move costs one, BFS minimizes move count even when the
+graph is implicit (a grid, word changes, or a state machine); materializing
+all edges is optional. If the state is not just a vertex, use the product
+state: for example $(v, p)$ for vertex and parity, or $(cell, t)$ only when
+time cannot be summarized by a static safety bound. Do not collapse two
+histories merely because they reach the same place if their legal next moves
+differ. Conversely, avoid carrying history that has no effect on future
+choices: a remainder often replaces the whole numeric prefix.
+
+For weighted paths, ask whether weights are exactly $0/1$, merely
+nonnegative, or possibly negative. The cheapest-looking queue is not a
+substitute for this proof: ordinary BFS is wrong as soon as edge costs vary.
+For dependencies, prove there is no directed cycle before topological DP.
+For connectivity, distinguish ``can reach'' from ``mutually reachable''; DSU
+cannot undo deletions and does not represent directed reachability.
+
+For optimization over sequences, write down the compatibility relation
+between a candidate and its predecessor. If compatible predecessors form a
+prefix after sorting/compression, a prefix maximum or sum structure can
+replace a quadratic scan. Check whether equality is allowed before choosing
+the query endpoint, and process ties as a batch when one equal-key item must
+not depend on another. For any DP, name the state in a sentence, give its
+base case, and state why all legal histories mapped to that state have the
+same continuations. Then count states times transitions; a correct state
+with a million transitions per state is still not an implementation plan.
+
+When uncertain, build the smallest counterexample to your proposed state:
+two paths arriving at the same vertex with different parity, two points
+sharing one coordinate, or a hazard arriving at the same time as you. If
+the proposed merge loses information needed by the answer, add precisely
+that information. The worked cases in the pattern casebook show this loop
+from recognition through invariant, implementation boundary, and a small
+variant.
+
+\subsection{Conventions}
+Zero-based indices; half-open $[l,r)$ ($[L,R]$ becomes $[L-1,R)$).
+Unreachable weighted distance is \texttt{INF=LLONG\_MAX/4}; finite values
+must be smaller. Bound arithmetic; cast before multiplication. Rectangular
+grids, $hw$ fits \texttt{int}. Use \texttt{finals\_core}; reset per case.
+
+\kactlimport{Prelude.h}
+
+\section{Unweighted graphs}
+\subsection{BFS}
+\verb@bfs(g,sources)@ returns edge distances ($-1$ if unreachable) and
+parents; sources start at zero. \verb@restore_path(a,t)@ returns a vertex
+path or empty if unreachable. $O(n+m+|S|)$ time, $O(n)$ space.
+\begin{lstlisting}
+auto a = bfs(g, {source});
+auto path = restore_path(a, target);
+\end{lstlisting}
+\kactlimport{BFS.h}
+
+\subsection{Connected components}
+\verb@components(g)@ assumes an undirected graph; returns IDs, representatives,
+sizes, and count. $c-1$ edges connect $c$ components.
+Directed input needs SCC or direction-ignoring traversal. $O(n+m)$ time,
+$O(n)$ space.
+\kactlimport{Components.h}
+
+\subsection{Grid BFS}
+\verb@grid_bfs(board,sources,'#')@ uses four neighbors; non-wall cells pass.
+ID $rw+c$ (decode \verb@id/w,id%w@). Sources in bounds; wall sources ignored.
+$O(hw)$. Hazards need separate arrival BFS and constrained transitions, often
+$t<\mathit{hazard}[v]$.
+\kactlimport{GridBFS.h}
+
+\section{Weighted paths and dependencies}
+\subsection{0--1 BFS and Dijkstra}
+\verb@zero_one_bfs(g,s)@ requires weights $0/1$; improvements go deque
+front/back. \verb@dijkstra(g,s)@ requires nonnegative weights.
+Both return \texttt{dist,parent}; unreachable is \texttt{INF}. Dijkstra skips
+candidates $\ge\texttt{INF}$. Time: $O(n+m)$ / $O((n+m)\log(n+m+1))$.
+Reverse weighted parents through $-1$; \verb@restore_path@ takes unweighted
+\texttt{Search} only.
+\kactlimport{WeightedPaths.h}
+
+\subsection{Topological order}
+\verb@topological_order(g)@ returns order or empty on cycle; check size $n$
+(empty graph valid). Parallel edges count separately. DAG DP requires
+acyclicity. $O(n+m)$ time, $O(n)$ space.
+\kactlimport{TopoSort.h}
+
+\section{Connectivity and trees}
+\subsection{DSU and Kruskal}
+\verb@DSU(n)@: find representative, unite result, set size; amortized
+$O(\alpha(n))$, additions only. \verb@kruskal(n,edges)@ takes each undirected
+\verb@Edge{u,v,w}@ once; returns forest edges, weight, count. Minimizes edge
+sum, not source distances; total fits \texttt{ll}. $O(m\log m)$.
+\kactlimport{DSUKruskal.h}
+
+\subsection{Tree order and LCA}
+\verb@root_tree(tree,root)@ requires a connected undirected tree; returns
+parent, depth, parent-first order, subtree sizes. Reverse order supports DP.
+Cyclic input gives a spanning tree, not validation. Not Euler order: subtree
+need not be contiguous. $O(n)$. \verb@LCA(info)@ provides \verb@jump@,
+\verb@query@, edge-count \verb@distance@; above-root jump is $-1$.
+Preprocess $O(n\log n)$, query $O(\log n)$. Weighted distance needs root
+sums; cross-component queries invalid.
+\kactlimport{TreeLCA.h}
+
+\section{Intervals and monotonicity}
+\subsection{Compression and prefix sums}
+\verb@compressed_values(a)@ sorts/deduplicates; \verb@rank_of(v,x)@ returns
+the lower-bound position (exact only if present); preserves order, not
+distances. \verb@prefix_sums(a)@ has $n+1$ entries; signed $[l,r)$ sum is
+$P[r]-P[l]$. Prefix build/query $O(n)/O(1)$; compression/lookup
+$O(n\log n)/O(\log n)$.
+\kactlimport{CompressionPrefix.h}
+
+\subsection{Union of intervals}
+\verb@merge_intervals(a)@ takes half-open $[l,r)$ intervals with $l\le r$;
+discards zero lengths and merges touching intervals. Require finite endpoints
+and no NaNs. $O(n\log n)$; widen endpoints before summing lengths. Used in
+Regional 2024 J.
+\kactlimport{IntervalUnion.h}
+
+\subsection{Offline differences}
+\verb@diff(n+1)@; \verb@difference_add(diff,l,r,x)@ adds on $[l,r)$;
+\verb@materialize_difference(diff)@ returns $n$ increments. $O(1)$ update,
+$O(n)$ materialize; offline only.
+\kactlimport{DifferenceArray.h}
+
+\subsection{Sliding window}
+\verb@count_subarrays_at_most(a,k)@ counts nonempty sums $\le k$ for
+nonnegative entries (zero if $k<0$). Exact sum: $atMost(k)-atMost(k-1)$.
+Signed entries need prefix frequencies. $O(n)$ time, $O(1)$ space.
+\kactlimport{SlidingWindow.h}
+
+\subsection{Binary search on the answer}
+\verb@first_true(lo,hi,ok)@ searches false-then-true on nonnegative $[lo,hi)$;
+skips $hi$, returns it if none succeeds. Prove monotonicity and sentinel
+feasibility. $O(\log(hi-lo+1)\,\mathrm{cost}(ok))$.
+\kactlimport{BinarySearch.h}
+
+\section{Dynamic range structures}
+\subsection{Fenwick tree}
+\verb@Fenwick(n)@: \verb@add(i,d)@, \verb@prefix(r)@ on $[0,r)$,
+\verb@sum(l,r)@. Assignment uses a delta. $O(\log n)$ operations, $O(n)$
+space. \verb@lower_bound(k)@ requires $k>0$ and nonnegative entries; returns
+the zero-based index of the first element whose inclusive prefix reaches
+$k$, or $n$ if absent. Rank and range arguments elsewhere use zero-based
+indices; Fenwick updates map those indices to one-based internal storage,
+while \verb@prefix(r)@ still queries $[0,r)$.
+\kactlimport{Fenwick.h}
+
+\subsection{Iterative segment tree}
+\verb@SegTree<T,Op>(a,identity,op)@ supports point set and ordered query on
+$[l,r)$. \texttt{Op} associative with two-sided identity; need not commute.
+Empty query returns identity. Build/space $O(n)$, operations $O(\log n)$.
+\kactlimport{SegmentTree.h}
+
+\section{Dynamic programming}
+Define what one state means. Equal states must have the same legal futures.
+Write base cases, transitions and evaluation order; distinguish unreachable
+from zero. Count states times transitions before coding. Tiny brute force
+checks whether forgotten history changes an answer.
+\subsection{Knapsack}
+\verb@knapsack01(w,v,C)@ maximizes value at most $C$, allows nothing and
+nonnegative weights (zero included); scan downward. Unbounded requires
+positive weights; scan upward. Both $O(nC)$ time/$O(C)$ space. Positive-value
+zero-weight unbounded item gives infinity. Exact base: $D[0]=0$, others
+$-\infty$; at-most base: all zero.
+\kactlimport{Knapsack.h}
+
+\subsection{Counting and LIS}
+Coin-outer/sum-ascending counts combinations; sum-outer counts sequences.
+\verb@lis_indices(a)@ returns one strict LIS as indices in $O(n\log n)$;
+nondecreasing uses \texttt{upper\_bound} instead of \texttt{lower\_bound}.
+\kactlimport{LIS.h}
+
+\subsection{Digit patterns}
+\verb@finals_dp::complete_digits(pattern,m)@ returns lexicographically
+smallest divisible completion or \texttt{nullopt}; nonempty digits/\texttt{?},
+$m>0$. Leading zero forbidden by default, including one digit; pass
+\texttt{false} to allow. $O(10Lm)$ time, $O(Lm)$ memory. Counting to $N$ needs
+a separate tight/started DP.
+\kactlimport{DigitDP.h}
+
+\section{Small exhaustive search}
+For $k$ binary choices enumerate masks $0\le s<2^k$. Minimize
+\texttt{\_\_builtin\_popcount(s)} when minimizing selected actions.
+Masters Mexico 2022 F has nine cells: precompute each click's 9-bit toggle
+mask; XOR chosen masks into the starting board and compare with the target.
+Clicks commute and pairs cancel, so 512 subsets suffice. $O(k2^k)$;
+use unsigned shifts with $k$ below the type width.

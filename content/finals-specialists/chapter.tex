@@ -1,0 +1,139 @@
+\chapter{Specialists}
+\noindent Prelude required below; GNU C++17 for SCC/2-SAT.
+Rename colliding globals/types when combining snippets. Recursive DFS needs
+sufficient stack; upstream test status does not validate your reduction.
+\begin{lstlisting}
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i,a,b) for(int i=(a);i<(b);++i)
+#define all(x) begin(x),end(x)
+#define sz(x) int((x).size())
+using ll=long long;
+using vi=vector<int>;
+using pii=pair<int,int>;
+\end{lstlisting}
+
+\section{Strings}
+\subsection{KMP: one pattern, borders}
+Recognize a single exact pattern searched in a long text, especially when
+overlaps or borders matter. Prefer this to a general automaton when matches
+are independent; if many patterns arrive together, use Aho--Corasick instead.
+\texttt{match(text,pat)}: zero-based starts, overlaps included; nonempty
+pattern, no nul bytes. Repetition: $p=n-\texttt{pi(s).back()}$, $n\bmod p=0$.
+\sourceimport{strings}{KMP.h}
+
+\subsection{Z: prefix matches}
+Recognize repeated comparisons against prefixes, such as matching a pattern
+after concatenating it with a separator. Use it when the answer needs every
+suffix's prefix-match length; use KMP for one streaming pattern instead.
+\texttt{Z(s)[i]}: common-prefix length with suffix $i$, \texttt{z[0]=0}.
+For pattern--separator--text, separator must be absent from both inputs.
+\sourceimport{strings}{Zfunc.h}
+
+\subsection{Aho--Corasick: many patterns}
+Recognize many fixed patterns queried against one or more texts. Build once,
+then scan each text; for one pattern KMP is smaller and easier to adapt.
+\texttt{AhoCorasick ac(patterns); ac.find(text)}: longest ending pattern
+index, $-1$ absent. Uppercase A--Z; change alphabet first; no empty patterns.
+\sourceimport{strings}{AhoCorasick.h}
+
+\section{Directed constraints}
+\subsection{SCC: strong components}
+Recognize mutual reachability or a directed graph that should collapse into
+groups of mutually reachable vertices. The condensation is a DAG; use reachability or
+topological DP there instead of repeatedly exploring cycles in the original.
+\texttt{scc(g,callback)} fills \texttt{comp[v],ncomps}; edges between components
+go toward smaller IDs. Copy callback vectors if storing; storage is reused.
+\sourceimport{graph}{SCC.h}
+
+\subsection{2-SAT: Boolean clauses}
+Recognize Boolean choices with clauses involving at most two literals,
+such as ``not both'' or ``at least one of these two.'' If constraints include capacities or general sums, use a
+different model; a satisfiable result gives one assignment, not an optimum.
+\texttt{TwoSat ts(n); ts.either(a,b)} adds $a\lor b$; negation is
+\texttt{\~{}x}, never \texttt{!x}. Read \texttt{values} only if \texttt{solve()} succeeds.
+\sourceimport{graph}{2sat.h}
+
+\section{Matching and capacities}
+\subsection{Hopcroft--Karp: bipartite matching}
+Recognize one-to-one assignment where each left item can use selected right
+items and each right item is used at most once. Weighted preferences need a
+weighted matching method; shared seat quotas need a capacity network.
+\texttt{g[left]} lists right indices; initialize \texttt{vi r(rightSize,-1)}.
+\texttt{hopcroftKarp(g,r)} returns size, writes \texttt{r[right]=left}; unweighted only.
+\sourceimport{graph}{HopcroftKarp.h}
+
+\subsection{Dinic: flow, residual cut}
+Recognize capacities, routing, or a feasibility model with a source, sink,
+and conservation at intermediate nodes. Matching is a special case; keep the
+flow model when quotas, shared bottlenecks, or cut explanations matter.
+\texttt{Dinic f(n); f.addEdge(u,v,cap); f.calc(s,t)} returns additional flow.
+Nonnegative capacities, $s\ne t$, no self-loops; totals fit \texttt{ll}; cut via \texttt{leftOfMinCut}.
+\sourceimport{graph}{Dinic.h}
+
+\section{Tree paths}
+\subsection{Binary lifting: jumps, LCA}
+Recognize many ancestor, $k$-th ancestor, or lowest-common-ancestor queries
+on a static rooted tree. Updates to parent edges invalidate the table; for
+changing trees use a dynamic-tree structure instead.
+\texttt{up=treeJump(parent); lca(up,depth,u,v)}; \texttt{parent[root]=root}.
+\texttt{jmp(up,v,k)} requires supported bits; supply valid parents and depths.
+\sourceimport{graph}{BinaryLifting.h}
+
+\section{Geometry}
+\subsection{Point: vector predicates}
+Recognize orientation, signed area, and projection tests that can be written
+as dot or cross products. Use integer coordinates for exact predicates when
+possible; constructed intersection coordinates need separate precision care.
+\texttt{a.cross(b,c)} is $(b-a)\times(c-a)$; positive means left turn.
+Bound subtraction/products first ($8B^2$ for $|x|,|y|\le B$); integer unit vectors truncate.
+\sourceimport{geometry}{Point.h}
+
+\subsection{On segment: closed membership}
+Recognize whether a point lies on a closed segment, including its endpoints.
+This is a predicate, not a nearest-point routine; floating coordinates need
+an explicit tolerance model.
+\texttt{onSegment(s,e,p)} includes endpoints/degenerate segments.
+Exact equality: floating points need a distance/tolerance alternative.
+\sourceimport{geometry}{OnSegment.h}
+
+\subsection{Segment intersection: constructed coordinates}
+Recognize intersection questions where the actual point or overlap endpoints
+are required. If the task only asks whether segments cross, exact orientation
+tests avoid division; this routine constructs coordinates and can truncate.
+\texttt{segInter(a,b,c,d)} returns 0/1/2 points: none/point/overlap endpoints.
+Integer output truncates fractional intersections; intermediate triple products can overflow.
+\sourceimport{geometry}{SegmentIntersection.h}
+
+\subsection{Convex hull: boundary vertices}
+Recognize the smallest convex boundary containing a point set, often as a
+preprocessing step for diameter or containment. Collinear boundary points
+may be discarded, so retain the original set if those points carry meaning.
+\texttt{convexHull(points)} returns CCW hull, discarding intermediate collinear points.
+Check hull size before subsequent operations; empty/collinear inputs are degenerate.
+\sourceimport{geometry}{ConvexHull.h}
+
+\subsection{Polygon: signed doubled area}
+Recognize area of a simple polygon supplied in boundary order; the shoelace
+sum keeps half-integer answers exact. It does not validate simplicity or sort
+unordered points into a boundary.
+\texttt{polygonArea2(poly)} requires nonempty boundary order; positive CCW.
+Bound accumulated cross products; retain doubled area for exact half-unit output.
+\sourceimport{geometry}{PolygonArea.h}
+
+\section{Optimized DP}
+\subsection{Line container: maximum of lines}
+Recognize a DP transition that asks for the maximum of many affine functions
+at changing query coordinates. If slopes or query order are constrained, a
+monotone hull may be simpler; verify arithmetic bounds either way.
+\texttt{LineContainer lc; lc.add(k,b); lc.query(x)}: maximum $kx+b$; query nonempty.
+Arbitrary order; products/breakpoint differences fit \texttt{ll}; negate carefully for minima.
+\sourceimport{data-structures}{LineContainer.h}
+
+\subsection{Matrix: small-state transition powers}
+Recognize a linear transition repeated a huge number of times over a small
+state vector, such as counting walks of fixed length. For a few steps, direct
+iteration avoids matrix setup; confirm the row/column convention carefully.
+\texttt{Matrix<T,N> A; (A\^{}k)*state}; rows destinations, columns sources, $k\ge0$.
+Initially zero; exponent zero is identity. Supply modular arithmetic if required.
+\sourceimport{data-structures}{Matrix.h}

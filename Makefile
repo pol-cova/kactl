@@ -49,3 +49,8 @@ test-session.pdf: content/test-session/test-session.tex content/test-session/cha
 showexcluded: build
 	grep -RoPh '^\s*\\kactlimport{\K.*' content/ | sed 's/.$$//' > build/headers_included
 	find ./content -name "*.h" -o -name "*.py" -o -name "*.java" | grep -vFf build/headers_included
+
+# Native landscape companion notebooks.
+.PHONY: handbooks
+handbooks:
+	python3 handbooks/build.py

@@ -1,0 +1,161 @@
+\section{A budget turns subset search into DP}
+\label{case:knapsack}
+Synthetic task: each item has integer weight $w_i\ge0$ and value $v_i$.
+Choose each item at most once, with total weight at most $C$, maximizing
+value. There are $2^n$ subsets. When $nC$ fits the runtime and $C$ fits
+memory, budget is a useful state dimension: all choices among the first $i$
+items with the same remaining capacity have the same future options.
+
+Define $D_i[c]$ as the best value using the first $i$ items with weight at
+most $c$. Empty selection is allowed, so $D_0[c]=0$. Either skip item $i$,
+or take it from the previous row:
+\[
+ D_{i+1}[c]=\max\bigl(D_i[c],D_i[c-w_i]+v_i\bigr)
+ \quad(c\ge w_i).
+\]
+If it does not fit, only the skip term remains. This partitions every valid
+subset according to whether it contains item $i$, proving the transition.
+It costs $O(nC)$ rather than $O(2^n)$; huge binary-encoded capacities can
+still make it impractical. If the sum of values is small instead, consider
+minimum weight per value. A small number of items with huge weights may
+instead suggest meet-in-the-middle enumeration.
+
+Trace weights $[2,3,4]$, values $[4,5,7]$, capacity 5. The first row after
+item 0 is $[0,0,4,4,4,4]$. After item 1 it is $[0,0,4,5,5,9]$; capacity 5
+uses the previous value 4 at capacity 2 plus the new value 5. Item 2 improves
+capacity 4 to 7 but does not beat 9 at capacity 5. The answer is 9, choosing
+the first two items. The implementation book's
+\verb@finals_core::knapsack01({2,3,4},{4,5,7},5)@ computes this value.
+
+Only the previous row is needed for values. In a single array, scan
+capacities downward so $D[c-w_i]$ still belongs to that previous row. For
+one item $(w,v)=(2,3)$ and $C=4$, scanning upward writes $D[2]=3$, then
+uses it again to write $D[4]=6$. That is two copies of one item and is wrong
+for 0--1 selection. It is exactly the intended behavior for an unbounded
+positive-weight item, where ascending order allows reuse.
+
+If the total weight must equal $C$, initialize only $D[0]=0$ and all other
+states as unreachable. Skip transitions out of unreachable states; an
+at-most initialization would incorrectly treat unattainable weights as free.
+To recover item indices, retain the rows and walk backward through skip/take
+choices. The supplied one-row helper returns only the optimal value.
+
+Practice: weights $[2,4]$, values $[3,8]$, exact weight 3. Answer: unreachable.
+For weight at most 3 the answer is 3. This single change in the output
+constraint changes the base cases, even though the recurrence looks similar.
+
+\section{Turn a worked case into a new solution}
+Use the examples as derivations, not text-matching rules. For a new task,
+write down these differences before reusing code:
+\begin{enumerate}
+\item \textbf{Feasibility.} Are equal coordinates allowed? May vertices
+repeat? Must every item be selected or assigned? Are numbers positive?
+\item \textbf{Objective.} Existence, count, minimum cost, lexicographically
+smallest answer, and reconstruction need different stored information.
+\item \textbf{Scale.} Count the reduced states using the new bounds.
+Remainder DP is useful only if length times modulus is affordable.
+\item \textbf{Timing and order.} Are updates online or offline? Are equal
+keys simultaneous? Can a hazard wait? Are dependencies acyclic?
+\item \textbf{Output.} Does the helper return a count, parent indices, a
+value, or an optional answer? Translate it into the statement's format.
+\end{enumerate}
+
+\subsection{How to move from the naive recurrence}
+Start with a mathematically correct slow solution on small inputs. Then
+look at the operation inside its innermost loop:
+\begin{itemize}
+\item A contiguous sum: prefix sums remove the inner loop.
+\item Best earlier value with coordinate below $x$: process one coordinate
+in order and query a prefix maximum in the other. Preserve strict ties.
+\item Repeating the same suffix after different histories: memoize a state
+that retains exactly the history affecting that suffix.
+\item Rechecking every capacity: prove feasibility monotone, then search
+its boundary. The feasibility test itself still needs to be efficient.
+\item Trying all pairs of large objects: count equal features or
+contributions. Do not assume grouping by one feature preserves every term.
+\end{itemize}
+Fundraising demonstrates the second change. Enigma demonstrates the third.
+Displaying Decimals shows why deriving the value for one pair does not by
+itself solve aggregation over all pairs.
+
+\section{What to test before trusting the adaptation}
+Choose tests that attack the reduction. A random test of the final numeric
+answer does not explain why it is correct, but disagreement with a slow
+oracle immediately disproves it.
+
+For each example below, write an enumerator that directly follows the task's
+rules, without reusing the optimized recurrence:
+\begin{itemize}
+\item Donation chains: enumerate subsets and check every selected pair's
+compatibility. This catches illegal ties and duplicate handling.
+\item Contiguous grouping: enumerate all cuts between adjacent jobs and
+minimize the largest group sum. This catches an incorrect greedy predicate.
+\item Toggle actions: BFS over board states with one click per edge. Compare
+the shortest distance with action-subset enumeration.
+\item Hazard escape: advance all possible monster positions and valid
+player positions one time layer at a time. Compare existence and path length;
+then replay the returned path for walls and unsafe simultaneous arrivals.
+\item Exact sum: enumerate every pair of endpoints and add its contents.
+This catches prefix initialization and query-before-insert mistakes.
+\end{itemize}
+These are the independent oracles used for this edition's five new modules.
+They exercise small cases; numeric bounds and maximum-size complexity still
+need separate checks. Named contest snippets have local test evidence, not
+new online-judge verdicts.
+
+\subsection{Counterexamples worth writing by hand}
+Equal keys; all values zero; one item; no solution; the start already at the
+goal; disconnected components; two different histories reaching the same
+vertex; an exact capacity boundary; a prefix sum repeated several times;
+a valid answer equal to the chosen sentinel. For each, predict the result
+before running the code. If the result is ambiguous, the model or output
+contract is not yet precise enough.
+
+\section{Practice without choosing another topic}
+Take one case at a time. Read its recognition and reduced task, cover the
+implementation, and write the state or invariant. Trace the given example.
+Implement it, compare small cases with the oracle, then answer the variation
+that changes one assumption. Finish by reopening a past statement without
+its algorithm name and explaining why the same method does or does not fit.
+
+A concrete order for the team's reported gaps:
+\begin{enumerate}
+\item Signed prefix counts and sorted interval union. Make endpoints,
+strictness, and multiplicity reliable.
+\item Parity-state BFS, then the hazard deadline model. Draw states and
+transitions before writing queue code.
+\item Enigma. Derive the state, backward feasibility, and forward smallest
+reconstruction; do not merely copy the three loops.
+\item Hidden Number and capacity search. Give the greedy proof in words,
+then deliberately change positivity or ordering and see what fails.
+\item Fundraising. Implement the quadratic recurrence first, then replace
+its predecessor scan with a range maximum and test tied coordinates.
+\item Fuzzy Factorization and single-fraction decimals. Separate exact
+representation from approximation and prove the chosen error convention.
+\item One assignment/flow example. Name vertices, edges, capacities, and
+what one unit of flow represents before choosing the routine.
+\end{enumerate}
+
+\section{When the current pattern is insufficient}
+The original KACTL has additional specialists. Choose them only after the
+model demands their extra capability. The following are navigation notes,
+not complete implementations in this workbook:
+\begin{itemize}
+\item Dynamic tree path aggregates: heavy-light decomposition plus a range
+structure. Edge versus vertex values and update composition matter.
+\item Offline queries with reversible local changes: Mo ordering. You must
+supply correct add/remove operations; it is not a ready-made answer.
+\item A recurrence that sums products across all offsets: convolution via
+FFT/NTT. Check transform length, modulus, and coefficient bounds first.
+\item Many substring-order queries: suffix array/LCP. KMP and Z solve
+prefix/matching tasks, not arbitrary suffix ordering.
+\item Weighted assignment: min-cost flow or an assignment algorithm.
+Cardinality matching ignores weights; ordinary max flow ignores costs.
+\item Large integer factorization: algorithms beyond trial division.
+A factorization routine still does not replace a reduction that avoids
+factoring the original giant number.
+\end{itemize}
+A novel problem may combine several models or require a new proof. When a
+case's assumptions do not fit, return to the naive formulation and find the
+missing state or operation. Adding more templates without identifying that
+mismatch will not repair the solution.

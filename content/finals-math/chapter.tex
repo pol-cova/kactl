@@ -1,0 +1,212 @@
+\chapter{Math}
+
+\section{Recognize the mathematical reduction}
+Before selecting a formula, name what the input lets you avoid. Huge decimal
+integers with a stated relative error may invite a bounded-prefix approximation;
+exact decimal text calls for integer scaling, not floating point. A rational
+display asks for a reduced denominator and a remainder cycle. A smallest
+unreachable positive sum may have a sorted-prefix invariant rather than a
+subset DP. A huge count of objects with a small value range often calls for
+frequencies and divisor classes instead of enumerating pairs. These cues are
+starting points: write down the exact quantity the output asks for and retain
+every part of the statement that changes it (ordered versus unordered,
+leading zeroes, strict versus inclusive error, empty choices, and modulo).
+
+For each candidate reduction, ask four questions. What smaller object has the
+same answer (a prefix, a reduced denominator, a gcd class)? What invariant or
+identity proves that the discarded information cannot matter? What is the
+largest intermediate value and actual running time at the stated bound? Which
+helper's contract matches the inputs exactly? For instance, the decimal-shape
+helper handles one nonnegative fraction; it does not by itself aggregate
+$N^2$ currency pairs. Any proposed gcd-class aggregation needs its own
+algorithm and full-limit evidence. Likewise, factorizing a
+10-digit prefix is justified by the approximation bound; that does not make
+arbitrary 64-bit factorization cheap.
+
+Try the reduction on a tiny hand case and an adversarial neighbor before
+coding. For decimal periods, compare a terminating denominator such as 8 with
+one containing a coprime factor such as 14. For greedy coverage, insert a
+value exactly at the current boundary, then one just beyond it. If the proof
+needs an unstated assumption, or the tiny trace disagrees, change the model
+before adapting code. The worked cases in the companion chapter show this
+sequence: recognize, reduce, prove, trace, then map the result to a helper and
+its limits.
+
+\section{Exact arithmetic}
+\kactlimport{Prelude.h}
+\subsection{Floor, ceiling and bounds}
+\textbf{Use:} signed floor/ceiling division; multiples in $[L,R]$:
+$\max(0,\lfloor R/d\rfloor-\lceil L/d\rceil+1)$, $d>0$.
+\textbf{Pitfall:} C++ truncates toward zero. Widen \emph{before} multiplying
+or subtracting: \texttt{i128(a)*b}. Helpers throw for zero denominator or
+overflow; 128 bits is finite.
+\kactlimport{IntegerDivision.h}
+
+\subsection{Exact decimal input}
+\textbf{Use:} \texttt{parse\_fixed(s,k)} stores $s10^k$ exactly;
+\texttt{digits10(x)} counts magnitude digits, including one for zero.
+\textbf{Requires:} $0\le k\le18$, integer part present, at most $k$
+fractional places, signed 64-bit result. No rounding/exponents/commas;
+read text, not \texttt{double}.
+\kactlimport{ExactDecimals.h}
+
+\section{Congruences}
+\subsection{Powers and inverses}
+\textbf{Use:} normalize, multiply and exponentiate modulo $m>0$;
+$O(\log e)$ power, $e\ge0$. $0^0=1$ before reduction.
+\textbf{Pitfall:} division requires $\gcd(a,m)=1$;
+$a^{-1}=a^{p-2}\pmod p$ requires prime $p$, $p\nmid a$.
+\kactlimport{ModularArithmetic.h}
+
+\subsection{Bezout and shared-factor CRT}
+$ax+by=g=\gcd(a,b)$; $ax+by=c$ solvable iff $g\mid c$.
+All solutions: $(x_0+tb/g,y_0-ta/g)$; intersect bounds using floor/ceiling.
+For $a=b=0$, handle $c=0$ separately.
+
+\textbf{Use:} merge $X=a\pmod m$, $X=b\pmod n$ even with shared factors.
+$g\mid(b-a)$ required; solve $(m/g)t=(b-a)/g\pmod{n/g}$,
+then $X=a+mt$, modulo $\operatorname{lcm}(m,n)$.
+\textbf{Requires:} positive moduli; nonnegative Euclid inputs.
+Incompatible CRT returns \texttt{nullopt}; overflowing lcm throws.
+\kactlimport{EuclidCRT.h}
+
+\section{Prime exponents and counting values}
+\subsection{Factorization and totient}
+For $n=\prod p^{e_p}$:
+\[
+\tau(n)=\prod(e_p+1),\quad \sigma(n)=\prod\sum_{j=0}^{e_p}p^j,
+\quad\phi(n)=n\prod_{p\mid n}(1-1/p).
+\]
+\textbf{Use:} positive inputs; trial factorization $O(\sqrt n)$,
+SPF preprocessing $O(V)$ time/space, factor $x\le V$ in $O(\log x)$.
+\textbf{Pitfall:} repeated arbitrary 64-bit inputs need faster factorization;
+$n=1$ has empty factors. Bound divisor sums/products separately.
+\kactlimport{FactorSieve.h}
+
+\subsection{Histogram and exact gcd classes}
+Positive values $\le V$: $f[x]=$ frequency,
+$M[d]=\sum_{k\ge1}f[kd]$; all $M$ cost $O(V\log V)$.
+For each fixed $b$, process divisors decreasing:
+\[
+E_b[g]=M[g]-\!\sum_{\substack{h\mid b,\ g\mid h\\h>g}}E_b[h].
+\]
+$E_b[g]$ counts $\gcd(a,b)=g$; ordered occurrence pairs multiply by $f[b]$.
+\textbf{Pitfall:} zero separately; divisor subtraction adds work
+(e.g. $\sum_b\tau(b)^2$).
+
+\section{Remainder states and decimals}
+\subsection{Digits as a small state}
+Append $d$: $r'=(10r+d)\bmod m$.
+\textbf{Use:} DP $(\mathrm{position},r)$, $O(10Lm)$, only when equal states
+have identical legal suffixes. Add other distinguishing history to state.
+\textbf{Pitfall:} leading zeros; widen $10r$. Smallest reconstruction tries
+digits ascending with suffix feasibility, not counts alone.
+
+\subsection{Period and rational display}
+$\operatorname{ord}_m(a)\mid\phi(m)$ for $m\ge2$, $\gcd(a,m)=1$.
+\textbf{Use:} start $k=\phi(m)$; divide prime factors $p$ while
+$a^{k/p}=1\pmod m$. Trial-factorization cost applies.
+
+Reduce $q=b/\gcd(a,b)=2^u5^v r$, $\gcd(r,10)=1$:
+\[
+D(a,b)=\mathrm{digits}(\lfloor a/b\rfloor)+\max(u,v)+P(r),
+\]
+$P(1)=0$, otherwise $P(r)=\operatorname{ord}_r(10)$.
+\textbf{Why:} long division removes the $2,5$ prefix; recurring remainders
+then require $10^k=1\pmod r$.
+\textbf{Requires:} $a\ge0,b>0$; canonical decimal, no point/overbar/trailing zeros.
+2025 D aggregation: gcd classes for fractions; suffix counts at
+$a\ge10b,100b,\ldots$ for integer digits. Maximum-size aggregation unbenchmarked.
+\kactlimport{DecimalPeriod.h}
+
+\section{Approximation as a construction}
+\subsection{Fuzzy Factorization (2025 F)}
+Keep ten leading digits: $X=m10^e+r$, $0\le r<10^e$, $m\ge10^9$.
+Choose $Y=m10^e$: $|X-Y|/X<1/m\le10^{-9}$.
+\textbf{Use:} factor $m<10^{10}$; add $e$ to exponents of $2,5$.
+At most ten digits: exact factorization. $O(|X|+\sqrt m)$.
+\textbf{Requires:} positive canonical decimal text. Empty map means one;
+merge primes and adapt output format. Different tolerance needs a new bound.
+\kactlimport{FuzzyFactorization.h}
+
+\section{Combinatorics}
+\subsection{Sample objects and binomial coefficients}
+Disjoint cases add; exactly $A$ choices then $B$ each multiply.
+Ordered distinct: $n!/(n-k)!$; subsets: $\binom nk$; ordered repetition: $n^k$.
+Stars/bars, $k\ge1$: nonempty bins $\binom{n-1}{k-1}$ ($n\ge k$);
+empty allowed $\binom{n+k-1}{k-1}$.
+Pascal: $\binom nk=\binom{n-1}{k-1}+\binom{n-1}k$ (any modulus).
+\textbf{Use:} factorial tables, $O(N+\log p)$ build, $O(1)$ query.
+\textbf{Requires:} prime $p$, $N<p$; primality unchecked. No Lucas/composite support.
+\kactlimport{Combinations.h}
+
+\subsection{Contributions and complements}
+\[
+\sum_{\mathrm{subarrays}}\sum a_i=\sum_i a_i(i+1)(n-i),
+\]
+\[
+\sum_{i<j}(a_i+a_j)=(n-1)\sum a_i,
+\quad\sum_{i<j}(a_i-a_j)^2=n\sum a_i^2-(\sum a_i)^2.
+\]
+At least one good $=$ total $-$ zero good.
+Bad run length $L$: $L(L+1)/2$ all-bad substrings.
+\textbf{Pitfall:} wide products; circular boundaries/all-bad case separately.
+
+\subsection{Inversions and repeated copies}
+\textbf{Use:} strict inversions $i<j,a_i>a_j$; compression/Fenwick,
+$O(n\log n)$ time, $O(n)$ space. Equal values do not count.
+\[
+\mathrm{inv}(S^K)=K\,\mathrm{within}+\binom K2\,\mathrm{cross}.
+\]
+$\mathrm{cross}=\#\{(u,v):S_u>S_v\}$ with no within-copy index restriction
+(2023 I). Widen/modularize products.
+\kactlimport{Inversions.h}
+
+\section{Probability and expectation}
+\[
+\mathbb E[X]=\sum_xx\Pr(X=x),\quad
+\mathbb E[\sum I_j]=\sum\Pr(I_j=1).
+\]
+Linearity needs no independence; $\Pr(A\cap B)=\Pr(A)\Pr(B\mid A)$.
+Ordered occurrence pairs: $N^2$ with replacement, $N(N-1)$ without.
+$E=c+qE+\sum p_jE_j\Rightarrow E=(c+\sum p_jE_j)/(1-q)$, $q<1$.
+\textbf{Pitfall:} modular $A/B$ requires invertible reduced denominator;
+never convert rounded decimals. $\operatorname{Var}(X)=E[X^2]-E[X]^2$.
+
+\section{Proof checks}
+Invariant: initialize, preserve, then prove sufficiency by construction.
+Termination: decreasing nonnegative integer. Binary search: monotone predicate.
+Greedy: feasibility-preserving exchange. Tiny brute force finds counterexamples.
+$\sum i=n(n+1)/2$;
+$\sum_{i=0}^kr^i=(r^{k+1}-1)/(r-1)$, $r\ne1$.
+Modular division needs cancellation/invertibility; error uses original denominator.
+
+\subsection{Greedy coverage: smallest missing subset sum}
+Positive integers sorted ascending; initially $R=0$ and every sum in $[0,R]$
+is reachable. If $x>R+1$, answer $R+1$; otherwise extend $R\gets R+x$.
+After all values answer $R+1$. Proof: old sums $[0,R]$ and sums using $x$,
+$[x,x+R]$, have no integer gap iff $x\le R+1$.
+Masters Mexico 2022 H; $O(n\log n)$; total plus one must fit.
+\begin{lstlisting}
+long long missing(std::vector<long long> a) {
+  std::sort(a.begin(), a.end());
+  long long next = 1;
+  for (auto x : a) {
+    assert(x > 0);
+    if (x > next) break;
+    next += x;
+  }
+  return next;
+}
+\end{lstlisting}
+
+\section{Integer geometry}
+$u\cdot v=u_xv_x+u_yv_y$;
+$u\times v=u_xv_y-u_yv_x$.
+$\operatorname{orient}(A,B,C)=(B-A)\times(C-A)$: positive left, zero collinear.
+$2A_{\triangle}=|\operatorname{orient}|$; compare squared distances.
+\textbf{Use:} exact predicates; segment membership = collinear + inclusive bounds.
+Simple polygon in boundary order: $2A=|\sum P_i\times P_{i+1}|$.
+\textbf{Requires:} helper coordinates $|x|,|y|\le10^{18}$; polygon sum needs its own
+bound. Compare orientation signs, not multiplied crosses; no universal floating EPS.
+\kactlimport{IntegerGeometry.h}

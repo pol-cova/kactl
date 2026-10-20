@@ -1,0 +1,141 @@
+\section{Start with the requested object}
+A statement's story is less useful than its output and constraints. Write
+one sentence saying what counts as a feasible answer. Then identify the
+quantity optimized or counted. ``Find a route'' can mean any route, fewest
+edges, smallest weight, a simple path, or a route that obeys a time limit.
+Those lead to different algorithms even on the same graph.
+
+Use the code references after this choice. The math book holds formulas and
+numeric contracts; the implementation book holds foundational helpers and
+KACTL specialists. This book supplies reductions, traces, code adaptations,
+and failure cases. The cases marked synthetic isolate one decision; the
+named contest cases link their sources. None of the example input/output
+wrappers has been submitted to a judge. The five new helper modules have
+local independent-oracle tests.
+
+\subsection{A five-line design before typing}
+\begin{enumerate}
+\item \textbf{Object.} A set, subsequence, contiguous interval, path, walk,
+assignment, or number? Preserve this distinction in the representation.
+\item \textbf{Information.} What must be known to decide the next legal
+move? If two histories can have different legal continuations, they cannot
+share one DP or search state.
+\item \textbf{Naive method.} Enumerate the choices or write the recurrence.
+Identify the repeated work rather than guessing an advanced structure.
+\item \textbf{Reduction.} Explain why discarded information cannot change
+the answer. For greedy, explain why an optimal solution can use the choice.
+For binary search, prove feasibility stays true as the bound increases.
+\item \textbf{Cost.} Count states, transitions, stored values, and numeric
+bounds. Multiply dimensions; a small-looking state with three indices can
+be too large. Compare the estimate with the actual time/memory limits.
+\end{enumerate}
+
+\subsection{Terms used in the graph cases}
+A vertex represents a state; an edge represents one permitted transition.
+An adjacency list stores each vertex's outgoing neighbors. Directed edges
+allow travel only in their stated direction; undirected edges are inserted
+both ways. A walk may repeat vertices, while a simple path may not. BFS
+uses a first-in, first-out queue, so it explores equal-cost transitions by
+increasing number of moves. A DP state stores an answer for a subproblem;
+its transition combines already solved states in a dependency-respecting order.
+
+\section{Recognition routes}
+A cue suggests a candidate, not a proof. Read the condition in the right
+column before selecting the tool. The page references lead to derivations.
+
+\subsection{Numbers and counting}
+\noindent\begin{tabular}{@{}p{.28\columnwidth}p{.60\columnwidth}@{}}
+\textbf{Clue} & \textbf{Model and required check}\\\hline
+Huge integer, allowed error & Keep significant digits and prove relative error. Exact output would invalidate this. Fuzzy, p.~\pageref{case:fuzzy}.\\
+Exact decimal prices & Parse scaled integers with a common scale; gcd or divisibility then applies exactly. Scaling, p.~\pageref{case:orbits}.\\
+Unknown digits and divisibility & State is position plus prefix remainder; add any other future-relevant property. Enigma, p.~\pageref{case:enigma}.\\
+Repeated process on a circle & Work modulo the size. Repeated step $d$ visits $n/\gcd(n,d)$ positions; there are $\gcd(n,d)$ orbits.\\
+Count pairs or expected total & Fix one contribution, count how often it appears, then sum. Specify ordered/unordered and replacement first.\\
+Synchronize periodic schedules & Solve congruences. CRT with shared factors requires residue differences divisible by the gcd.\\
+Smallest missing subset sum & Sorted positive values may cover a whole interval. Prove coverage before skipping enumeration, p.~\pageref{case:missing}.\\
+\end{tabular}
+
+For a contribution example, array element $a_i$ appears in $(i+1)(n-i)$
+subarrays: choose a left endpoint from $0..i$ and right endpoint from
+$i..n-1$. Therefore the sum of all subarray sums is
+$\sum_i a_i(i+1)(n-i)$. This avoids enumerating the subarrays. It does not
+count subarrays whose sum equals a target; that predicate couples elements
+and needs a different reduction, p.~\pageref{case:exact-sum}.
+
+\subsection{Graphs and dependencies}
+\noindent\begin{tabular}{@{}p{.28\columnwidth}p{.60\columnwidth}@{}}
+\textbf{Clue} & \textbf{Model and required check}\\\hline
+Fewest equal-cost moves & BFS on complete states, possibly position plus mask/parity. Product states, p.~\pageref{case:state-bfs}.\\
+Costs only zero and one & 0--1 BFS; discovery is not final until distance improvements stop. Arbitrary costs need another algorithm.\\
+Minimum nonnegative total cost & Dijkstra; add resource/phase information to vertices when future choices depend on it.\\
+Can events be ordered? & Directed edges from prerequisite to dependent; topological order detects cycles and supports DAG DP.\\
+Connect everything cheaply & MST, usually Kruskal with DSU; this minimizes edge total, not source-to-target distance.\\
+Mutual directed reachability & SCC, then a condensation DAG if processing components. Undirected components are not a substitute.\\
+Two groups of objects & Bipartite matching for one-to-one assignment; flow for quotas. Define each edge's meaning, p.~\pageref{case:matching}.\\
+Avoid spreading hazards & Earliest hazard arrivals become deadlines for a constrained player BFS, p.~\pageref{case:hazards}.\\
+\end{tabular}
+
+A tree is a connected undirected graph without cycles. Rooting gives each
+nonroot vertex one parent. Process parents before children for depth/root
+sums; reverse that order for child-to-parent DP. LCA answers path ancestry,
+not arbitrary range aggregates. For path sums with only static edge weights,
+root distances give $d(u,v)=D[u]+D[v]-2D[\mathrm{LCA}(u,v)]$; dynamic path
+updates need more structure. The supplied root order is not a contiguous
+subtree Euler tour.
+
+\subsection{Arrays, ranges, and optimization}
+\noindent\begin{tabular}{@{}p{.28\columnwidth}p{.60\columnwidth}@{}}
+\textbf{Clue} & \textbf{Model and required check}\\\hline
+Static interval sum & Prefix sums and subtraction; negative values are fine.\\
+Many range additions, one final array & Difference endpoints, then prefix scan. Interleaved queries need another structure.\\
+Point changes, range sums & Fenwick; use delta for assignment. Prefix order statistics require nonnegative frequencies.\\
+Associative range summary & Segment tree with a correct identity and merge; sum, min, max and ordered concatenation differ.\\
+Overlapping coverage & Sort intervals, merge, sum lengths. Depth of coverage instead needs events, p.~\pageref{case:intervals}.\\
+Minimize largest feasible bound & Prove a monotone decision predicate, then binary search; its internal solver still needs proof, p.~\pageref{case:capacity}.\\
+Best earlier compatible choice & Write $dp[i]=w_i+\max dp[j]$. A dominance/prefix query may replace the scan, p.~\pageref{case:fundraising}.\\
+Small integer budget, optional items & DP by processed items and capacity; scan direction controls reuse, p.~\pageref{case:knapsack}.\\
+Few independent binary actions & Enumerate subsets if the operation count fits. Commuting toggles give a concrete example, p.~\pageref{case:flip}.\\
+\end{tabular}
+
+\section{A nearby problem that needs a different tool}
+\label{case:exact-sum}
+\subsection{Signed exact sums: replace the window by prefix frequencies}
+Synthetic task: count nonempty contiguous subarrays with sum $K$. If all
+values are nonnegative, expanding a window cannot decrease its sum and
+removing the leftmost value cannot increase it. This supports the window
+helper in the implementation book. Negative values break those implications:
+for $[3,-2]$ and $K=1$, discarding the first 3 when it looks too large loses
+the valid two-element subarray.
+
+Define $P[0]=0$ and $P[r]=a_0+\cdots+a_{r-1}$. An interval $[l,r)$ has
+sum $K$ exactly when $P[l]=P[r]-K$. Scan $r$ left to right and count earlier
+prefix values. Initialize frequency of 0 to one. Query before inserting
+$P[r]$, so $l<r$ and the empty subarray is excluded.
+
+Trace $[1,-1,1]$, $K=1$: start with frequencies $\{0:1\}$. Prefix 1 finds
+one earlier 0; prefix 0 finds no earlier $-1$; prefix 1 now finds two earlier
+zeros. Total 3, from $[0,1)$, $[0,3)$ and $[2,3)$. Storing only whether a
+prefix exists would lose multiplicity.
+
+The module uses an ordered map for guaranteed $O(n\log n)$ time and $O(n)$
+space. A hash map changes this to expected linear time, with hash/runtime
+tradeoffs. Prefix sums and $P[r]-K$ must fit the numeric type. For minimum
+length instead of count, keep the latest matching index; for maximum length,
+keep the earliest. For arbitrary intervals with inequalities, an equality
+map alone is insufficient; consider ordered prefix queries.
+
+\subsection{Shared code for this book}
+The new modules use namespace \texttt{finals\_cases}. Copy their shared
+prelude and the listed dependencies once. \texttt{Fundraising.h} additionally
+uses the implementation book's segment tree; \texttt{CapacitySearch.h} uses
+its binary search. The includes below point to the repository files; when
+typing into one contest file, paste those dependencies instead of retaining
+local paths. Existing helpers keep \texttt{finals\_core} or
+\texttt{finals\_math}; qualify a call or use the corresponding namespace.
+\sourceimport{finals-patterns}{Prelude.h}
+\sourceimport{finals-patterns}{ExactSum.h}
+
+Practice variant: count zero-sum nonempty intervals in $[0,0]$. Answer: 3.
+The three prefixes are all zero; each new prefix pairs with every earlier
+one. Inserting before querying would incorrectly count an empty interval
+at each step.
