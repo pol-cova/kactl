@@ -1,0 +1,73 @@
+\section{Worked math reductions}
+
+These cases practice the step between recognizing a topic and knowing what to implement. Each starts with the requested output, keeps a tempting wrong approach visible, then gives a small trace and a route through the math helpers. The walkthroughs explain how to reason about the named tasks; they are not claims that one formula fits every nearby problem.
+
+\subsection{Fuzzy Factorization: make the allowed error useful}\label{case:fuzzy}
+
+\textbf{Recognition.} The input is a decimal integer with as many as 1,000 digits, but the answer may differ by relative error at most $10^{-9}$. That permission changes the problem: the goal is not to factor the input exactly. Look for a nearby integer whose factorization is easy, and prove its error against the original denominator $X$.
+
+\textbf{Reduction.} Keep the first ten decimal digits. Write $X=m10^e+r$, where $e$ is the number of omitted digits and $0\le r<10^e$. Choose $Y=m10^e$. If $X$ has more than ten digits, then $m\ge10^9$, so
+\[
+ \frac{|X-Y|}{X}=\frac rX<\frac{10^e}{m10^e}=\frac1m\le10^{-9}.
+\]
+The inequality is strict because the discarded suffix is smaller than $10^e$. If there are at most ten digits, choose $Y=X$ exactly. Thus only $m$, at most $10^{10}-1$, needs factorization; the appended power of ten contributes known factors.
+
+A tempting wrong approach is converting the thousand-digit token to floating point and rounding it. That loses the suffix unpredictably, so neither the selected integer nor its error bound is controlled. Another wrong turn is factoring all of $X$: exact factorization is unnecessary. Truncating to fewer than ten significant digits without recomputing the bound also does not establish the tolerance.
+
+\textbf{Trace.} For $X=1234567890123$, keep $m=1234567890$, omit $e=3$ digits, and take $Y=1234567890000$. The discarded suffix is $r=123$, so $r/X<10^{-9}$. Since $m=2\cdot3^2\cdot5\cdot3607\cdot3803$ and $10^3=2^3 5^3$, combine exponents to obtain $Y=2^4\cdot3^2\cdot5^4\cdot3607\cdot3803$. This combining step matters: output each distinct prime once with its full exponent.
+
+\textbf{Implementation sequence.} Read the token as text. Call \texttt{finals\_math::fuzzy\_factors(s)}: it validates positive canonical decimal input, reads the prefix without overflow, trial-factors $m$, then adds $e$ to the powers of 2 and 5 in a map. Emit that map in the statement's format. The helper returns an empty map for 1, so adapt that boundary if a variant permits $X=1$; the 2025 task has $X\ge2$. Work is $O(|s|+\sqrt m)$ with $\sqrt m<10^5$; output size is the number of distinct factors. It does not solve exact factorization of a huge integer, a different tolerance without a new prefix bound, or a task asking for $X$'s exact factors. \href{https://scorelatam.naquadah.com.br/latam-2025/contest.pdf}{2025 F statement} gives $X\le10^{1000}$ and permits output primes through $10^{18}$.
+
+\textbf{Practice variant.} With relative error $10^{-6}$, how many leading digits suffice? Six give $m\ge10^5$ and error $<10^{-5}$, which is insufficient. Seven give $m\ge10^6$ and strict error $<10^{-6}$. The threshold is one more retained digit than the exponent in the tolerance.
+
+\subsection{Displaying Decimals: solve one fraction before aggregation}\label{case:decimals}
+
+\textbf{Recognition.} The output asks for a display length, so separate integer part from fractional expansion. A reduced denominator containing only 2s and 5s terminates; a remaining coprime factor creates a recurring remainder cycle. This reduces one ratio. The 2025 problem averages this value over every ordered pair of currencies, a separate aggregation problem.
+
+\textbf{Reduction.} For nonnegative $a$ and positive $b$, reduce the fraction's denominator to $q=b/\gcd(a,b)$. Write $q=2^u5^v r$ with $\gcd(r,10)=1$. Long division needs $\max(u,v)$ digits before the remainder repeats. Then the least positive $k$ with $10^k\equiv1\pmod r$ is the period; for $r=1$ there is no recurring part. The complete length is
+\[
+ \operatorname{digits}(\lfloor a/b\rfloor)+\max(u,v)+\operatorname{ord}_r(10),
+\]
+with order zero when $r=1$. The integer-part term counts the zero before the decimal point for a proper fraction, as the statement requires.
+
+A tempting mistake is using $\phi(r)$ as the period. The order only divides $\phi(r)$ and can be smaller. Another is ignoring the factor valuations: the prefix uses their maximum, while the leftover coprime denominator controls the cycle. For a terminating fraction, do not invent a recurring digit.
+
+\textbf{Trace.} Take $1/28$. Since $28=2^2\cdot7$, the nonrepeating prefix has length 2 and residual denominator 7. Multiplying successive remainders by 10 modulo 7 gives $1\to3\to2\to6\to4\to5\to1$, a cycle of length 6. The display is $0.03\overline{571428}$: one leading zero, two prefix digits, and six recurring digits, for 9 digits total. Here "fractional length" means digits after the point; the helper returns integer-part digits separately.
+
+\textbf{Implementation sequence.} Call \texttt{finals\_math::decimal\_shape(a,b)} for one nonnegative fraction. It returns the integer-part digit count, nonrepeating fractional length, and period. It reduces by gcd, strips 2s and 5s, then calls \texttt{finals\_math::order\_mod(10,r)} when $r>1$. That routine starts at $\phi(r)$ and divides out prime factors while the modular power remains 1. Trial factorization is part of the cost, so respect the helper's bound.
+
+Do not mistake this component for a complete solution to 2025 D. The contest asks for an expectation across $N^2$ ordered pairs, with $N\le10^5$ and values at most $10^5$; calling this helper per pair is quadratic. Grouping equal values into gcd classes is one possible direction for aggregation, but this walkthrough does not give or establish a full-limit algorithm. See the \href{https://scorelatam.naquadah.com.br/latam-2025/contest.pdf}{2025 D statement}.
+
+\textbf{Practice variant.} For $5/14$, the denominator is $2\cdot7$, giving one prefix digit and $\operatorname{ord}_7(10)=6$; there are seven fractional digits. The integer part is zero, counted as one digit for the complete-display convention from 2025 D.
+
+\subsection{Smallest missing subset sum: protect a covered interval}\label{case:missing}
+
+\textbf{Recognition.} The task asks for the smallest positive integer that no subset can sum to. The list may have a million positive values, but no target bound makes a subset-sum table attractive. Ask whether reachable sums have a simple shape after sorting. Positivity lets us extend a contiguous interval without creating holes.
+
+\textbf{Reduction and proof.} Sort the values and maintain $R$ such that every sum in $[0,R]$ is reachable. Initially only 0 is covered, so $R=0$. For the next value $x$, sums not using it cover $[0,R]$; sums using it cover $[x,x+R]$. If $x\le R+1$, these ranges touch or overlap, and all sums through $R+x$ become reachable. Update $R\gets R+x$. If $x>R+1$, the processed positive values sum to $R$, and every remaining value is at least $x$; thus $R+1$ cannot be formed and is the answer.
+
+A tempting approach is returning the smallest absent element from a set of enumerated subset sums. That set can grow exponentially and still misses the proof that all smaller sums are covered. Another error is allowing zero or negative values without revisiting the invariant: the proof uses positive inputs.
+
+\textbf{Trace.} For $1,1,3,4$, begin with $R=0$. The first 1 is at most $R+1=1$, so cover through 1. The second 1 is at most 2, so cover through 2. The value 3 meets the boundary and extends coverage through 5. The 4 extends it through 9. Every sum from 0 to 9 exists; the smallest missing positive sum is 10. Had the third value been 4, the first gap would have been 3, and later values could not fill it.
+
+\textbf{Implementation sequence.} Sort, set \texttt{next=1}, then for each $x$: if $x>\texttt{next}$, stop; otherwise add $x$ to \texttt{next}. This variable is always $R+1$, so it is the answer both at the first gap and after the final element. Use a 64-bit accumulator: with $10^6$ values each at most $10^6$, the total may reach $10^{12}$. Time is $O(n\log n)$; extra space depends on whether sorting may modify the input. The math chapter's greedy snippet implements this invariant.
+
+If zero is permitted, skip it because it does not extend the interval. With negatives the positive-prefix method no longer applies. If the task asks for the number of subsets producing each sum, this proof does not count multiplicities. \href{https://acm.iteso.mx/share/ICPCMXMasters2022_problems.pdf}{Masters Mexico 2022 H statement} sets positive values through $10^6$ and $n\le10^6$.
+
+\textbf{Practice variant.} For sorted values $1,2,2,9$, $R$ advances from 0 to 1, to 3, to 5; then 9 exceeds $R+1=6$. Answer: 6.
+
+\subsection{Exact scaling, gcd, then a remainder orbit}\label{case:orbits}
+
+\textbf{Recognition.} This synthetic task combines exact input with the decimal-cycle reasoning above: two prices arrive as decimal strings; find how many digits their exact ratio needs, including its first full recurring period. Decimal text suggests scaling both values by the same power of ten. That common scale cancels in a ratio, gcd removes shared factors, and modular remainders reveal the period.
+
+\textbf{Reduction.} With three fractional places, parse each string as an integer number of thousandths. For example, $0.750$ and $2.100$ become 750 and 2100. The ratio is unchanged by their shared scale; $\gcd(750,2100)=150$ reduces it to $5/14$. Since $14=2\cdot7$, there is one nonrepeating decimal place, then an orbit modulo 7. The orbit under $r\mapsto10r\bmod7$ has six distinct remainders, so the fractional part uses seven digits. No binary floating-point rounding enters the gcd or cycle.
+
+A tempting mistake is parsing both strings as \texttt{double} and rounding their quotient to infer a period. Approximate equality cannot establish an exact remainder cycle. Another is applying different scales to numerator and denominator without normalizing them: the scale must be consistent. If the inputs have different fractional lengths, normalize to a shared decimal scale first.
+
+\textbf{Trace.} Long division of $5/14$ begins with remainder 5. The first digit is 3, leaving remainder 8; recurring digits follow remainders $8,10,2,6,4,12$, then remainder 8 returns. Multiplication by 10 modulo 14 generates this orbit; stripping its factor 2 explains why the period is the order of 10 modulo 7. A repeated remainder proves all following digits repeat because division is deterministic.
+
+\textbf{Implementation sequence.} Parse both strings with \texttt{finals\_math::parse\_fixed(s,3)}, which rejects excess fractional digits and returns an exact signed 64-bit scaled integer. Confirm the prices are nonnegative and the denominator positive, then call \texttt{finals\_math::decimal\_shape(a,b)}. For 750/2100 it returns integer digits 1, nonrepeating length 1, and period 6. Combine these according to the task's display convention. Parsing costs linear time in string length; gcd is logarithmic, and period computation factors $\phi(r)$ by trial division. Check that scaled values and products fit the helper's 64-bit contract. For arbitrary-precision prices, use an arbitrary-precision route; this helper does not promise it.
+
+The adaptation boundary is the requested output. If only the recurring period is requested, return 6 here instead of adding the prefix. A task asking for rounded decimal value needs a rounding rule and precision analysis. If the denominator has only factors 2 and 5, period is zero. \href{https://scorelatam.naquadah.com.br/latam-2025/contest.pdf}{2025 D statement} defines its display convention and includes individual-ratio examples.
+
+\textbf{Practice variant.} For $0.125/0.375$, scaling to thousandths gives $125/375=1/3$. The prefix is empty and the period is 1 because $10\equiv1\pmod3$. The ratio is unchanged by extra trailing zeroes. If those exceed the parser's chosen precision, strip them or increase the common scale before parsing.

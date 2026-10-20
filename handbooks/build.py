@@ -20,6 +20,7 @@ MATH_DEPS = {'ExactDecimals':['IntegerDivision'],
              'Combinations':['ModularArithmetic'],
              'Inversions':['IntegerDivision'],
              'FuzzyFactorization':['FactorSieve']}
+CASES = ['Fundraising','HazardEscape','ToggleSubsets','CapacitySearch','ExactSum']
 CORE_DEPS = {'GridBFS':['BFS']}
 
 def annotated(body, description, dependencies=()):
@@ -73,7 +74,8 @@ def build():
     (ROOT/'build').mkdir(exist_ok=True)
     output=ROOT/'handbooks/pdf';output.mkdir(exist_ok=True)
     for job,name in [('finals-math','math-handbook'),
-                     ('finals-implementations','implementation-handbook')]:
+                     ('finals-implementations','implementation-handbook'),
+                     ('finals-patterns','patterns-workbook')]:
         log=ROOT/'build'/(job+'-build.txt')
         args=['pdflatex','-shell-escape','-interaction=nonstopmode',
               '-halt-on-error','-output-directory=build',f'content/{job}.tex']
@@ -92,4 +94,5 @@ if __name__=='__main__':
     generate('math.hpp',MATH,'finals-math','finals_math',MATH_DEPS)
     generate('core.hpp',CORE,'finals-implementations','finals_core',CORE_DEPS)
     generate_digit()
+    generate('case_studies.hpp',CASES,'finals-patterns','finals_cases',{})
     if not opts.generate_only:build()

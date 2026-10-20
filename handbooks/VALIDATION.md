@@ -1,4 +1,4 @@
-# Validation of the October 18 edition
+# Validation of the October 19 edition
 
 ## Commands run locally
 
@@ -8,7 +8,7 @@ CXX=clang++ SANITIZE=1 sh handbooks/test.sh
 python3 handbooks/build.py
 ```
 
-All six test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
+All seven test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
 
 ## Independent oracles and boundaries
 
@@ -23,11 +23,13 @@ The selected printed KACTL headers compile in the adapter. This does not claim t
 
 `audit_test.cpp` adds full-width signed arithmetic, 2,000 sliding-window comparisons near `LLONG_MAX`, 1,000 interval-union comparisons, decimal endpoints, CRT overflow/modulus-one, Fenwick rank and digit-zero checks. The audit fixed pre-shrink window overflow and a DSU member-name collision with KACTL’s `sz` macro.
 
-The integration program, `native_modules_test.cpp`, compiles all generated module headers together and checks their dependency integration, including the `sz` macro. All 29 generated headers also compiled individually with KACTL macros and aliases under Clang C++17. Four helper oracle suites were additionally run against generated modules with sanitizers before the interval addition. The exact printed greedy example passed 1,000 exhaustive subset comparisons with sanitizers.
+The integration program, `native_modules_test.cpp`, compiles the 29 core/math generated module headers together and checks their dependency integration, including the `sz` macro. All 35 generated headers also compiled individually with KACTL macros and aliases under Clang C++17. Four helper oracle suites were additionally run against generated modules with sanitizers before the interval addition. The exact printed greedy example passed 1,000 exhaustive subset comparisons with sanitizers.
+
+`case_studies_test.cpp` adds 500 donation instances against exhaustive subset compatibility, 500 capacity instances against every cut partition, 1,000 signed-sum arrays against endpoint enumeration, 150 random toggle systems plus all 512 targets of the 3x3 board against state BFS, and 300 grids plus explicit boundaries against time-layer hazard/player propagation. It also replays returned escape paths. The same source runs against both the authoritative header and the generated printed modules, so seven programs produce eight executions per test mode. Empty inputs, impossible paths, strict ties, duplicate donations, and capacities near `LLONG_MAX` are covered.
 
 ## PDF checks
 
-The final editions use native KACTL A4 landscape with three columns: 3 pages for math and 8 pages for implementations. They have page-numbered contents, code hashes, compact formulas, and source-derived code modules interleaved with contracts. The former portrait layout was replaced. Rendered pages were inspected for layout, code clipping, tables, and page furniture. Native builds finish without LaTeX errors, undefined references, or overfull-box warnings. All pages were rendered and inspected after disabling column stretching that caused code/prose overlap. PDF page boxes were verified as landscape. Math formulas use LaTeX notation; arithmetic is no longer interpreted as Markdown emphasis.
+The final editions use native KACTL A4 landscape. Math and implementation references use three columns; the worked-patterns book uses two columns and 10pt prose for derivations. The PDFs have 4, 8, and 14 pages respectively. Numbered contents and in-book page references connect recognition cues to worked cases. Code uses native source imports and hashes. All pages were rendered and inspected for clipping, overlaps, tables, and headers. Builds finish without LaTeX errors, undefined references, or overfull-box warnings. Page boxes were verified as landscape.
 
 The source and build scripts are editable. Original KACTL headers are printed through the unchanged native preprocessor. Generated helper modules carry authorship, source, description and validation status metadata.
 
@@ -37,4 +39,6 @@ These are local oracle checks, not new online-judge acceptances. Full maximum-co
 
 ## Print and evidence revision
 
-Helper source lines fit 63 columns using two-space tab stops. Formatting is committed; builds do not require clang-format. Printed notes retain preconditions and costs while removing tutorial-length explanations. The regional and Mexico/Masters round-three reports distinguish primary-source examples from the older provisional regional classifications. Mexico/Masters coverage is a spot audit, not a complete historical corpus.
+Helper source lines fit 63 columns using two-space tab stops. Formatting is committed; builds do not require clang-format. Reference notes retain preconditions, costs, and selection cues. The separate worked book supplies derivations, counterexamples, traces, adaptation boundaries, and practice answers without a page-count cap. The regional and Mexico/Masters round-three reports distinguish primary-source examples from the older provisional regional classifications. Mexico/Masters coverage is a spot audit, not a complete historical corpus.
+
+Case review corrected numerical traces, clarified that negative weights break a particular greedy solver rather than the monotonicity of capacity feasibility, and distinguished team capacity edges from job-demand edges. Primary-source facts and independent derivations are separated in the three pattern-source ledgers.

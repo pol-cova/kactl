@@ -1,0 +1,326 @@
+% Include as a fragment in the patterns handbook; it deliberately has no chapter.
+\section{Graph and DP casebook}
+
+These cases practice a repeatable decision: identify what the answer depends
+on, choose the smallest state that preserves that information, and only then
+choose a traversal or data structure. The reasoning appears in prose and
+short pseudocode, with links to tested local helpers where one matches the
+problem contract. A helper is a reusable implementation component, not a
+complete submission.
+
+\subsection{Shortest route with a parity condition}
+\label{case:state-bfs}
+This is a synthetic graph example.
+
+Suppose an undirected graph has unit-cost edges, and the task asks whether a
+walk from $s$ to $t$ uses an even number of edges, or asks for the shortest
+such walk. A plain BFS on vertices looks tempting: it gives the shortest
+distance to every vertex. But knowing that a vertex is reachable does not
+tell us whether it is reachable after an even or odd number of steps. If a
+vertex is reached by paths of lengths two and three, those histories have
+different eligibility for the destination condition. Keeping only one
+distance per vertex throws away relevant information.
+
+Use a product graph whose state is $(v,p)$, where $v$ is the current vertex
+and $p\in\{0,1\}$ is the number of traversed edges modulo two. Each original
+edge $(u,v)$ creates transitions $(u,p)\to(v,1-p)$ and
+$(v,p)\to(u,1-p)$. The invariant is: BFS distance to $(v,p)$ is the fewest
+edges in any walk from $s$ to $v$ whose length has parity $p$. Initialize
+only $(s,0)$ at distance zero. Then a shortest even walk to $t$ is the
+distance at $(t,0)$; an unreachable state remains absent. If actual
+reconstruction is required, retain a parent state for each visited product
+state and walk backward from $(t,0)$.
+
+Pseudocode:
+\begin{lstlisting}
+dist[n][2] = UNREACHED
+dist[s][0] = 0; queue.push((s, 0))
+while queue not empty:
+    (u, p) = queue.pop_front()
+    for v in graph[u]:
+        q = 1 - p
+        if dist[v][q] is UNREACHED:
+            dist[v][q] = dist[u][p] + 1
+            parent[v][q] = (u, p)
+            queue.push((v, q))
+\end{lstlisting}
+
+The expanded graph has $2n$ states and $O(m)$ transitions, so time and memory
+stay $O(n+m)$. For ordinary reachability,
+the local \verb@bfs(g,{source})@ helper is enough. For parity, represent
+$(v,p)$ as \verb@2*v+p@ and construct the implicit transitions while
+traversing, or build a graph with $2n$ vertices and call the helper. Its
+returned parent array then supports \verb@restore_path@ on expanded state
+IDs; decode each ID by division and remainder by two. A direct implementation
+may store two distances per vertex instead.
+
+Tiny trace: let the graph be the triangle $0$--$1$--$2$--$0$, with $s=0$.
+The initial state is $(0,0)$. One BFS layer discovers $(1,1)$ and $(2,1)$.
+The next layer discovers $(2,0)$ through 1 and $(1,0)$ through 2. Thus the
+shortest even walk from 0 to 2 has length 2, namely $0,1,2$, even though the
+shortest unrestricted walk has length 1. This illustrates why ``visited
+vertex'' is not a sufficient marker.
+
+The model changes if edges carry non-unit costs: parity still belongs in the
+state, but BFS no longer minimizes cost. Use Dijkstra on the product graph
+for nonnegative costs, or the appropriate weighted shortest-path method if
+negative edges are allowed. If the condition is ``exactly $k$ edges,'' a
+modulo-two state is insufficient; use a step dimension when $k$ is small, or
+a method suited to the bound. If the question asks for a simple path, the
+expanded walk can revisit an original vertex with a different parity, so the
+walk-based model alone does not enforce simplicity.
+
+Practice variant: find the shortest walk whose length is congruent to 1
+modulo 3. Answer: use state $(v,p)$ with $p\in\{0,1,2\}$; every edge moves
+to $(v,(p+1)\bmod 3)$; start at $(s,0)$ and read $(t,1)$. The product graph
+has $3n$ states. This generalization works because the condition depends
+only on the edge count modulo 3.
+
+\subsection{A grid with moving hazards: CSES Monsters}
+\label{case:hazards}
+
+In this grid task the player and every monster can move one cell per turn;
+the player must reach any boundary cell without ever occupying a cell with a
+monster. A single BFS from the player is the obvious first attempt, but it
+answers the wrong question. A cell that is reachable in three steps might
+already be occupied by a monster at time two. Treating monsters as static
+walls ignores the timing constraint; moving them in the same queue as the
+player also mixes two different arrival-time questions.
+
+The sufficient state has two parts conceptually: the player's cell and the
+time at which the player arrives. Rather than include time in a large
+time-expanded graph, first compute the earliest monster arrival time
+$M[x]$ for every cell using one multi-source BFS from all monster cells.
+Then compute a player BFS from $A$, entering a neighbor $y$ only if the
+player's arrival time $P[x]+1$ is strictly less than $M[y]$. Equality is
+unsafe because both arrive during the same turn. The invariant for the
+second BFS is that each queued cell is reached by a valid player path and at
+its shortest valid time; all such paths are safe because every earlier
+arrival along that path passed the same strict test.
+
+Steps:
+\begin{enumerate}
+\item Run multi-source grid BFS from every monster; walls are impassable.
+Unreached cells have $M=\infty$.
+\item Start player BFS at $A$ with $P[A]=0$. For each open neighbor $y$,
+accept it only when it is unvisited and $P[x]+1<M[y]$.
+\item Stop when a valid boundary cell is dequeued. Store its parent cell
+and move direction at discovery time; reverse those moves to print a path.
+If no boundary is reached, report failure.
+\end{enumerate}
+\columnbreak
+\sourceimport{finals-patterns}{HazardEscape.h}
+The tested \verb@finals_cases::escape_monsters(board)@ helper packages these
+steps and returns an optional UDLR path; an empty optional means no escape.
+It accepts the statement's \verb@.@, \verb@#@, \verb@A@, and \verb@M@
+alphabet. Use the returned path directly when one valid route is enough.
+
+This is $O(hw)$ time and space for an $h$ by $w$ board, since each cell is
+processed a constant number of times. The local \verb@grid_bfs(board,sources,'#')@
+helper computes ordinary grid distances with four-neighbor motion; call it
+once for monsters and once for the player only if you can apply the safety
+filter during player expansion. A plain call for player distances followed
+by a check of only the final boundary is incorrect, because an unsafe
+intermediate cell may have been traversed. For that constrained BFS, reuse
+the helper's neighbor and parent pattern while adding the arrival test.
+Flatten cells with \verb@id = row*w + col@ and decode with division and
+remainder by \verb@w@. The statement permits up to $1000\times1000$ cells,
+so the product and all stored IDs must fit the chosen integer type.
+
+Tiny trace: consider rows \verb@#######@, \verb@#.....#@,
+\verb@#M.A..#@, \verb@#.....#@, and \verb@#####.#@. The player starts at
+row 2, column 3. The left neighbor has monster arrival time 1, so entering
+it at time 1 fails the strict test. A shortest safe route goes down, right,
+right, then down to the only open boundary cell: it takes 4 steps. The
+monster at $(2,1)$ needs 6 steps to reach that exit at $(4,5)$, so the
+player arrives safely. This
+immediate comparison prevents the
+mistake of declaring an escape merely because a boundary is geometrically
+reachable.
+
+Boundary details matter: if the player begins on a boundary, the zero-step
+path is valid before any hazard can arrive, so check the start as an exit.
+Unreachable monster distances behave as infinity; do not accidentally
+interpret a default zero as an arrival at time zero. Monsters can be
+initialized together because all spread at the same speed. If hazards have
+different speeds, doors, or time-dependent routes, a single unweighted
+multi-source BFS may no longer represent earliest arrival; use the matching
+weighted or time-dependent model. If the player has a different speed, scale
+times consistently or compare arrival times in common units.
+
+Practice variant: hazards move twice as fast as the player, and all moves
+remain on unit grid edges. Answer: monster BFS gives edge distance $d_M$;
+the hazard time is $d_M/2$, so compare player arrival $d_P$ by cross
+multiplying $2d_P<d_M$ (assuming positions change at half-turn granularity).
+If turns are indivisible and the rules specify simultaneous discrete moves,
+derive the exact timing convention from the statement before applying this
+formula.
+
+Source: the primary \href{https://cses.fi/problemset/task/1194/}{CSES Monsters statement} specifies simultaneous moves, adversarial knowledge of the path, and a boundary escape. The two-BFS method above is the state reduction used to enforce those rules.
+
+\subsection{Digit completion as a remainder automaton: 2017 Enigma}
+\label{case:enigma}
+
+Enigma gives a fixed-length decimal pattern containing digits and question
+marks, and asks for its smallest completion divisible by $N$, with no leading
+zero. A tempting approach fills unknown digits with their smallest allowed values
+and tries to repair divisibility later. This fails because a locally small digit can leave a suffix remainder
+that no legal completion can fix. Enumerating all replacements is
+exponential in the number of question marks. The key observation is that a
+prefix's entire numeric value is unnecessary: future divisibility depends
+only on its remainder modulo $N$.
+
+Define $F[i][r]$ to mean: starting before pattern position $i$ with current
+prefix remainder $r$, there exists a legal suffix completion that ends with
+remainder zero. The recurrence tries each allowed digit $d$ and sets
+$F[i][r]$ if $F[i+1][(10r+d)\bmod N]$ is true. Base case:
+$F[L][0]=\text{true}$ and $F[L][r]=\text{false}$ for $r\ne0$. At position
+zero, disallow digit zero. To reconstruct the lexicographically smallest
+number, start with remainder zero and choose the smallest allowed digit
+whose next state is feasible in the next row. This greedy choice is safe
+because the table certifies that some valid suffix remains.
+
+The local \verb@finals_dp::complete_digits(pattern,modulus)@ implements this
+API directly: it returns an optional smallest string, forbids a leading zero
+by default (including a one-character zero), and runs in $O(10LN)$ time and
+$O(LN)$ memory. Its boolean table is filled backward; reconstruction walks
+forward. For a larger modulus, this memory bound may be the limiting factor,
+so check constraints before allocating $(L+1)N$ entries. The official 2017
+statement has $L\le1000$ and $N\le1000$, making the table the intended
+shape.
+
+Tiny trace: pattern \verb@?2?@ and modulus 7. The smallest legal first digit
+is 1. After choosing 1 the prefix remainder is 1. At position 1 the fixed
+digit 2 changes it to $(10\cdot1+2)\bmod7=5$. The last digit $d$ must satisfy
+$(10\cdot5+d)\bmod7=(1+d)\bmod7=0$, so $d=6$. The answer is 126. Trying
+first digit 0 is forbidden; choosing 1 is justified by suffix feasibility,
+not by guessing.
+
+The official statement allows the initial character to be a question mark
+but requires the completed number not to start with zero; its samples also
+include an impossible pattern. Keep ``no completion'' distinct from a valid
+answer containing zero. A common implementation bug is to compute the
+forward remainder correctly but use a suffix table with the wrong meaning;
+state the table meaning before writing the recurrence. Another is to use
+\verb@10*r+d@ in a narrow integer type when bounds could overflow; the local
+helper widens before multiplication.
+
+Modification: if the task asks for the number of completions rather than
+the smallest one, replace boolean feasibility with counts and sum over
+allowed digits. The local helper does not do that; moreover, counts may need
+a modulus or arbitrary precision. If the task asks for the smallest number
+at most a bound, add a tight-to-bound state as well as the remainder. The
+remainder alone is no longer sufficient because the bound depends on the
+prefix relation to the limit.
+
+Practice variant: complete \verb@?3@ to a multiple of 4. Answer: no
+completion exists, because every multiple of 4 is even while the fixed final
+digit is 3. The feasibility table reports that directly; there is no
+candidate digit or retraction to apply.
+
+Source: the primary \href{https://maratona.ime.usp.br/hist/2017/resultados/contest.pdf}{2017 Enigma statement} gives the pattern, divisibility, leading-zero rules, and bounds. The remainder-DP explanation matches the tested local helper.
+
+\subsection{Weighted dominance DP with strict ties: 2017 Fundraising}
+\label{case:fundraising}
+
+Each candidate has beauty $B$, fortune $F$, and donation $D$. Two people
+can coexist only when they are equal in both attributes or one is strictly
+larger in both. We seek the maximum donation sum. Sorting by one coordinate
+and taking a weighted LIS is close, but a naive implementation can admit
+illegal ties: processing points with equal fortune one at a time may let a
+later point use an earlier one, even though equal fortune does not satisfy
+the strict increase rule. A prefix sum Fenwick tree is also the wrong query:
+we need the best predecessor value among compatible points, not the sum of
+all their values.
+
+First merge identical $(B,F)$ pairs and sum their donations. It is safe and
+necessary: equal-coordinate people do not argue and can all be invited, so
+they act as one point of combined weight. Then sort by fortune ascending and,
+for equal fortune, beauty descending. For a point $i$, its DP value is
+$D_i+\max(0,\text{best donation sum ending at a point with }F<F_i,B<B_i)$.
+The zero option starts a new chain. The best valid guest set forms a chain
+under strict increase in both coordinates: any pair in the chain can
+coexist, and the statement's compatibility condition excludes incomparable
+unequal pairs.
+
+Compress beauty values to zero-based ranks $0..K-1$. A prefix-maximum
+Fenwick tree can answer the maximum DP among beauty ranks strictly below the current rank,
+then update the current rank with the candidate DP. If only the generic local
+\verb@SegTree<T,Op>@ is available, use max with identity zero (donations are
+positive), query half-open ranks $[0,rank)$, and point-set the rank to the
+maximum of its current value and the new DP. Do not use a range sum or the
+ordinary additive \verb@Fenwick@ helper: neither represents prefix maximum.
+Also, point-set must preserve the previous maximum if another valid chain
+ends at the same rank.
+
+There are two correct tie strategies. One is to sort by fortune ascending
+and beauty descending; a sequential strict-prefix query cannot see equal
+beauty, and descending beauty prevents equal-fortune points from increasing
+in beauty. Alternatively, process all equal-fortune points as a batch: query
+all of them against the tree before applying any updates.
+Batching is often easier to reason about and remains correct with another
+tie sort. Use one strategy deliberately, not half of each.
+
+The tested \verb@finals_cases::max_donation_chain(donors)@ helper in this
+booklet applies the batched strict-coordinate method. Its \verb@Donor@
+fields are \verb@wealth@, \verb@beauty@, and \verb@donation@; nonnegative
+donations are supported, and identical coordinate pairs are combined.
+\columnbreak
+\sourceimport{finals-patterns}{Fundraising.h}
+Use it when the input matches that contract; keep the recurrence below as
+the explanation for why the data-structure query is correct.
+
+Pseudocode for the editorial ordering:
+\begin{lstlisting}
+merge donations for each identical (beauty, fortune)
+sort by (fortune ascending, beauty descending)
+compress all beauty coordinates
+for (B, F, D) in sorted points:
+    r = rank(B)
+    best = prefix_max(0, r)          // zero-based half-open ranks [0,r)
+    dp = best + D
+    update_prefix_max(r, dp)
+answer = maximum dp (or tree-wide maximum)
+\end{lstlisting}
+
+The local segment tree uses zero-based ranks and half-open ranges, so query
+$[0,r)$. A Fenwick implementation may instead use one-based update indices;
+then query the first $r$ entries. The local Fenwick \verb@prefix(r)@ API
+also means $[0,r)$. Define the index convention and prefix API together so
+the exclusion of equal beauty is visible in code. Complexity is $O(N\log N)$ time and $O(N)$
+space, with $N\le10^5$; donation sums require 64-bit integers because each
+donation may be as large as $10^9$.
+
+Tiny trace: points $(B,F,D)=(1,1,4),(2,1,7),(3,2,5)$. Sort at fortune 1 by
+beauty descending: $(2,1,7)$ then $(1,1,4)$. Each starts its own chain because
+neither can see an earlier strictly smaller beauty at the same fortune. At
+$(3,2,5)$, the prefix query sees both prior values and returns 7, giving 12.
+A fortune-ascending, beauty-ascending sort would process $(1,1,4)$ before
+$(2,1,7)$ and incorrectly chain them for 11, then report 16. Merging equal
+points matters too: two guests at $(2,1)$ with donations 3 and 8 may both be
+invited, so their grouped weight is 11.
+
+The maximum query uses identity zero because the statement's donations are
+positive and starting a new chain is allowed. If negative donations were
+permitted but the guest list had to be nonempty, initialize the final answer
+to negative infinity; for each point, set $dp=D+\max(0,\text{best
+predecessor})$, so zero starts a new nonempty chain at that point. Do not
+initialize the answer to zero, which would represent an invalid empty guest
+list when every donation is negative. Also, merging identical coordinate
+pairs by summing weights relies on the original positive donations: with
+negative donations, one could invite only some people in that group, so
+retain their individual choices. If the problem changed to allow equality in beauty,
+query through the current rank; if it allowed equality in fortune, equal-$F$
+points could interact and the descending-tie trick would no longer enforce
+strictness in that coordinate. For reconstruction, store the chosen
+predecessor point whenever a new maximum is written; ties can use any
+predecessor meeting the constraints.
+
+Practice variant: require beauty strictly increasing but permit equal
+fortune. Answer: keep fortune ascending, and query beauty ranks strictly
+below as before; equal-fortune points may now chain, so process them in
+ascending beauty order and allow each update to affect the next point. This
+change is valid only because the modified rule explicitly permits equal
+fortune.
+
+Source: the primary \href{https://maratona.ime.usp.br/hist/2017/resultados/contest.pdf}{2017 Fundraising statement} defines compatibility, donation bounds, and input size. The casebook's recurrence and tie strategies are checked against the tested local helper; see \verb@handbooks/research/graph-dp-pattern-sources.md@ for source-access notes.

@@ -6,6 +6,41 @@ nonnegative; DAG DP: acyclic; Bellman--Ford: general negative edges.
 Components: undirected connectivity; DSU: additions; Kruskal: spanning forest;
 SCC: directed mutual reachability.
 
+Choose by asking what one legal move costs and what information determines
+the future. If every move costs one, BFS minimizes move count even when the
+graph is implicit (a grid, word changes, or a state machine); materializing
+all edges is optional. If the state is not just a vertex, use the product
+state: for example $(v, p)$ for vertex and parity, or $(cell, t)$ only when
+time cannot be summarized by a static safety bound. Do not collapse two
+histories merely because they reach the same place if their legal next moves
+differ. Conversely, avoid carrying history that has no effect on future
+choices: a remainder often replaces the whole numeric prefix.
+
+For weighted paths, ask whether weights are exactly $0/1$, merely
+nonnegative, or possibly negative. The cheapest-looking queue is not a
+substitute for this proof: ordinary BFS is wrong as soon as edge costs vary.
+For dependencies, prove there is no directed cycle before topological DP.
+For connectivity, distinguish ``can reach'' from ``mutually reachable''; DSU
+cannot undo deletions and does not represent directed reachability.
+
+For optimization over sequences, write down the compatibility relation
+between a candidate and its predecessor. If compatible predecessors form a
+prefix after sorting/compression, a prefix maximum or sum structure can
+replace a quadratic scan. Check whether equality is allowed before choosing
+the query endpoint, and process ties as a batch when one equal-key item must
+not depend on another. For any DP, name the state in a sentence, give its
+base case, and state why all legal histories mapped to that state have the
+same continuations. Then count states times transitions; a correct state
+with a million transitions per state is still not an implementation plan.
+
+When uncertain, build the smallest counterexample to your proposed state:
+two paths arriving at the same vertex with different parity, two points
+sharing one coordinate, or a hazard arriving at the same time as you. If
+the proposed merge loses information needed by the answer, add precisely
+that information. The worked cases in the pattern casebook show this loop
+from recognition through invariant, implementation boundary, and a small
+variant.
+
 \subsection{Conventions}
 Zero-based indices; half-open $[l,r)$ ($[L,R]$ becomes $[L-1,R)$).
 Unreachable weighted distance is \texttt{INF=LLONG\_MAX/4}; finite values
@@ -112,7 +147,10 @@ feasibility. $O(\log(hi-lo+1)\,\mathrm{cost}(ok))$.
 \verb@Fenwick(n)@: \verb@add(i,d)@, \verb@prefix(r)@ on $[0,r)$,
 \verb@sum(l,r)@. Assignment uses a delta. $O(\log n)$ operations, $O(n)$
 space. \verb@lower_bound(k)@ requires $k>0$ and nonnegative entries; returns
-first zero-based inclusive prefix reaching $k$, or $n$ if absent.
+the zero-based index of the first element whose inclusive prefix reaches
+$k$, or $n$ if absent. Rank and range arguments elsewhere use zero-based
+indices; Fenwick updates map those indices to one-based internal storage,
+while \verb@prefix(r)@ still queries $[0,r)$.
 \kactlimport{Fenwick.h}
 
 \subsection{Iterative segment tree}
