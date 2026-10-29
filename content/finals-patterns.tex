@@ -1,0 +1,39 @@
+\documentclass[10pt,a4paper,notitlepage]{extreport}
+\usepackage{kactlpkg}
+\kactlcontentdir{content}
+\university{Mexico finals -- Patterns}{Mexico finals}{kth}
+\team{Mexico finals}{Worked problems}
+\contest{Mexico finals}{2026-11-08}
+\makeatletter
+\newcommand{\sourceimport}[2]{%
+  \begingroup\def\@kactldir{content/#1}\kactlimport{#2}\endgroup}
+\makeatother
+\setcounter{tocdepth}{2}
+\renewcommand{\contentsname}{Find a model}
+\renewcommand{\cftbeforetoctitleskip}{0pt}
+\renewcommand{\cftaftertoctitleskip}{4pt}
+\renewcommand{\cfttoctitlefont}{\Large\bfseries}
+\renewcommand{\cftchapfont}{\normalsize\bfseries}
+\renewcommand{\cftbeforechapskip}{4pt}
+\begin{document}
+\begin{multicols*}{2}
+\raggedcolumns
+\noindent{\Large\bfseries From statement to implementation}\par
+A worked-problem companion to the math and implementation references.
+Landscape, two columns, larger prose for derivations. Edition 2026-10-28.
+\tableofcontents
+\thispagestyle{fancy}
+\chapter{Choose and check a model}
+\input{content/finals-patterns/routing.tex}
+\chapter{Arithmetic and representations}
+\input{content/finals-patterns/math-cases.tex}
+\chapter{States and transitions}
+\input{content/finals-patterns/graph-dp-cases.tex}
+\chapter{Change the representation}
+\input{content/finals-patterns/model-cases.tex}
+\chapter{More states and tree reductions}
+\input{content/finals-patterns/dp-extra.tex}
+\chapter{Adapt, test, and practice}
+\input{content/finals-patterns/practice.tex}
+\end{multicols*}
+\end{document}

@@ -1,0 +1,99 @@
+\sourceimport{finals-math-extra}{Prelude.h}
+\section{Divisors and prime exponents}
+\textbf{Choose the method first.} One moderate positive integer can use
+trial division, removing each full prime power in $O(\sqrt n)$. Many
+queries bounded by a feasible $V$ favor an SPF sieve; its memory is
+$O(V)$. Trial division is a poor choice for many large inputs or
+adversarial semiprimes. Neither method is unrestricted 64-bit
+factorization.
+
+\subsection{Generate divisors}
+\texttt{positive\_divisors(n)} returns every positive divisor in sorted
+order. It scans $d\le n/d$ and pairs $d$ with $n/d$, so it does not
+construct divisors from a factorization. Runtime is $O(\sqrt n)$ plus
+output storage. Requires $n>0$.
+\sourceimport{finals-math-extra}{Divisors.h}
+
+\subsection{Reason with exponents}
+If $n=\prod p^{e_p}$, the least multiplier making $n$ a $k$th power is
+$\prod p^{(k-e_p\bmod k)\bmod k}$. For $72=2^3\cdot3^2$, this gives
+$2$ for squares. Pass the factorization from a suitable method; the
+helper returns no value if the multiplier overflows signed 64-bit.
+For factorial divisibility, Legendre's sum
+$v_p(n!)=\lfloor n/p\rfloor+\lfloor n/p^2\rfloor+\cdots$
+avoids constructing $n!$. Its helper requires prime $p$.
+\sourceimport{finals-math-extra}{PrimeExponents.h}
+
+\section{GCD classes and circular motion}
+\subsection{Count exact pairwise GCDs}
+Let $M_d$ count input values divisible by $d$. Every unordered pair
+among those $M_d$ values has gcd a multiple of $d$. Thus, descending
+from $V$, subtract counts already assigned to proper multiples:
+$E_d=\binom{M_d}{2}-\sum_{j\ge2}E_{jd}$. Then $E_d$ counts pairs with
+gcd exactly $d$, and $E_1$ is the coprime-pair count. This handles
+duplicate values by index and excludes pairing an item with itself.
+Requires positive values at most $V$; time $O(V\log V+N)$ and memory
+$O(V)$. For a small number of pairs or a huge value range, use direct
+pairwise gcd in $O(N^2\log V)$ instead. For $N<2$, every answer is 0.
+\sourceimport{finals-math-extra}{GCDPairs.h}
+
+\subsection{Are all pairwise GCDs equal?}
+The supplied pair loop is correct for $N\ge2$, but costs
+$O(N^2\log V)$ and reads out of bounds when $N<2$. Decide that boundary
+from the statement: with no pairs, ``all pairs agree'' is vacuously true,
+although there is no unique pairwise gcd value. A safe small-input version is:
+\begin{lstlisting}
+// Positive values. O(n^2 log(max a)).
+bool same_gcd(const vector<long long>& a) {
+    if (a.size() < 2) return true;
+    long long g = std::gcd(a[0], a[1]);
+    for (int i = 0; i < (int)a.size(); ++i)
+        for (int j = i + 1; j < (int)a.size(); ++j)
+            if (std::gcd(a[i], a[j]) != g)
+                return false;
+    return true;
+}
+\end{lstlisting}
+For bounded positive values, \texttt{same\_pair\_gcd(a,V)} uses the
+histogram. If every pair agrees, that common value must equal the gcd
+of the whole array; check whether its exact class contains all
+$N(N-1)/2$ pairs. Computing the whole-array gcd alone is insufficient:
+$[6,10,15]$ has global gcd 1 but pair gcds 2,3,5. On $[6,10,14]$ every
+pair gcd is 2; on $[2,2,4]$ it is also 2, so duplicates need not fail.
+
+An alternative when SPF is already built: divide each number by the global
+gcd, factor it, and reject if a prime appears in two different numbers.
+The normalized numbers must be pairwise coprime. Mark each distinct prime
+once per number; normalized 1 has no primes and may repeat. This is
+$O(V+N\log V)$ with the existing linear SPF sieve, but the histogram is
+more useful when the problem asks for counts of several gcd values.
+
+\subsection{Orbits under repeated addition}
+On $n$ circular positions, repeatedly adding $s$ forms
+$\gcd(n,s)$ disjoint cycles, each of length $n/\gcd(n,s)$. For
+$(n,s)=(12,8)$, there are four cycles of length three; from zero the
+visited positions are $0,8,4$. Reduce reachability to the residue class
+modulo the gcd, then check any safety condition along that cycle.
+\sourceimport{finals-math-extra}{GCDOrbits.h}
+
+\subsection{Base representation becomes divisibility}
+If $N$ has exactly two equal digits $d$ in base $b$, then
+$N=db+d=d(b+1)$. Enumerate positive divisors $d$ of $N$, recover
+$b=N/d-1$, and require $b\ge2$ and $1\le d<b$. For $N=12$ this gives
+$(d,b)=(1,11),(2,5),(3,3)$, but the last pair is illegal because a digit
+must be smaller than its base. Thus the valid two-digit bases are 11 and 5.
+This handles exactly two equal digits, not all palindromes. For the broader
+2023 F task, smaller bases can have more digits and need direct conversion
+and a palindrome check; partition the base ranges so results are not duplicated.
+The proof is the positional numeral equation, not a guess from examples.
+\href{https://icpcarchive.github.io/Latin%20American%20Contests/Latin%20American%20Regional%20Contest/2023%20Latin%20American%20Regional%20Contest/solution.pdf}{2023 official solutions}.
+
+\subsection{Practice and adapt}
+\href{https://cses.fi/problemset/task/1713}{Counting Divisors}: compare a
+per-query factorization with an SPF or divisor-count sieve at the stated bounds.
+\href{https://cses.fi/problemset/task/2417}{Counting Coprime Pairs}: use
+$E_1$, not the number of prime inputs. Test repeated ones and repeated primes.
+\href{https://cses.fi/problemset/task/2182}{Divisor Analysis}: the input
+already supplies prime exponents; do not reconstruct or factor the huge integer.
+Its modular divisor-product part requires additional exponent arithmetic.
+These are practice tasks, not claimed new online-judge acceptances.

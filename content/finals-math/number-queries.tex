@@ -1,0 +1,110 @@
+\section{Prime and divisor queries: ready-to-use code}
+\textbf{Select by bounds.} For many prime queries with maximum endpoint
+at most $10^7$, build \texttt{PrimeTable} once. It provides primality,
+the ordered prime list, and inclusive range counts. Its arrays cost about
+$5(V+1)$ bytes plus the prime list, roughly 53 MB at $V=10^7$ with
+4-byte \texttt{int}. Check the contest memory limit.
+For a narrow interval near a large number, use the segmented routine below.
+It still needs primes through $\sqrt R$; a short interval alone does not
+make arbitrary 64-bit endpoints cheap.
+\sourceimport{finals-number}{Prelude.h}
+
+\subsection{Is x prime? Count or list primes in [L,R]}
+0 and 1 are not prime. Cross off multiples beginning at $p^2$: smaller
+multiples already have a smaller prime factor. Build
+$P[x]=\#\{p\le x:p\text{ prime}\}$. Then the answer on inclusive
+$[L,R]$ is $P[R]-P[L-1]$, with the $L=0$ boundary handled separately.
+\sourceimport{finals-number}{PrimeQueries.h}
+\begin{lstlisting}
+using namespace finals_number;
+PrimeTable t(1000000); // build ONCE, outside query loop
+bool yes = t.is_prime(97); // true
+int count = t.count(10, 30); // 6
+vector<int> p = t.list(10, 30);
+// p = {11, 13, 17, 19, 23, 29}
+\end{lstlisting}
+Build $O(V\log\log V)$; primality and range count $O(1)$; listing takes
+$O(\log\pi(V)+k)$ for $k$ returned primes. Every queried endpoint must be
+within the built table. Rebuilding for each query wastes the preprocessing.
+
+\textbf{Complete query program.} Copy Prelude and PrimeQueries above, then
+add this main. Input: maximum endpoint $V$, query count $Q$, then $Q$ pairs
+$L,R$. Output: one count per line. All queries obey $0\le L\le R\le V$.
+\begin{lstlisting}
+#include <iostream>
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    int V, Q;
+    std::cin >> V >> Q;
+    finals_number::PrimeTable table(V);
+    while (Q--) {
+        int L, R;
+        std::cin >> L >> R;
+        std::cout << table.count(L, R) << '\n';
+    }
+}
+\end{lstlisting}
+For input \texttt{30 3} followed by \texttt{0 1}, \texttt{2 2},
+\texttt{10 30}, the output lines are 0, 1, 6. A compilable version is
+\texttt{handbooks/examples/prime\_range\_queries.cpp} in the repository.
+
+\subsection{Count prime elements in an array interval}
+This is a different question: count occurrences in array positions, not
+prime integers in a numeric interval. Duplicates must count repeatedly.
+After building \texttt{t} through the largest nonnegative array value:
+\begin{lstlisting}
+std::vector<int> pref(a.size() + 1, 0);
+for (int i = 0; i < (int)a.size(); ++i)
+    pref[i + 1] = pref[i] + (a[i] >= 2 &&
+                            t.is_prime(a[i]));
+// Array positions [l,r), not numeric values [l,r].
+int answer = pref[r] - pref[l];
+\end{lstlisting}
+For $a=[2,4,2,7]$, the whole array contains three prime occurrences,
+although it contains only two distinct prime values. Positions $[1,4)$
+contain two. With point updates, store the prime indicator in a Fenwick
+tree and update by new-indicator minus old-indicator. The prime table must
+cover every possible updated value too.
+
+\subsection{High endpoints: segmented prime enumeration}
+\texttt{segmented\_primes(L,R)} marks just the inclusive interval and
+returns its primes in sorted order. For each base prime $p\le\sqrt R$,
+the first marked multiple is
+$\max(p^2,\lceil L/p\rceil p)$; using only the rounded multiple would
+incorrectly mark $p$ itself when it lies in the interval.
+\sourceimport{finals-number}{SegmentedPrimes.h}
+\begin{lstlisting}
+auto p = finals_number::segmented_primes(10, 30);
+auto count = p.size(); // 6
+// Large endpoint, small interval also allowed:
+auto high = finals_number::segmented_primes(
+    1000000000000LL - 1000, 1000000000000LL);
+\end{lstlisting}
+This implementation enforces $0\le L\le R\le10^{12}$ and width
+$W=R-L+1\le10^7$. It needs $O(\sqrt R+W)$ space, including output,
+and scans the base-prime list per call. Many high-interval queries may need
+shared base preprocessing. To count only and reduce output memory, count
+surviving flags instead of storing them; the supplied API returns the list.
+A huge width is not supported just because $R$ is within the endpoint bound.
+Perfect-square endpoints, 0, 1, and single-number intervals are tested.
+
+\subsection{How many divisors? What is their sum?}
+If many positive queries are bounded by $V$, add each possible divisor $d$
+to all multiples of $d$. This builds the divisor count and divisor sum for
+every value in $O(V\log V)$ time and $O(V)$ memory. Query in $O(1)$.
+\sourceimport{finals-number}{DivisorTable.h}
+\begin{lstlisting}
+finals_number::DivisorTable d(1000000);
+int count = d.count[12]; // 6
+long long sum = d.sum[12]; // 28
+long long proper_sum = d.sum[12] - 12; // 16
+bool perfect = (d.sum[6] - 6 == 6); // true
+// d.count[1] == 1, d.sum[1] == 1
+\end{lstlisting}
+Only positive query values are valid; zero has no finite divisor count.
+At $V=2\cdot10^6$, the two arrays need about 24 MB. If only counts are
+needed, omit the sums array and its update. For a few large integers, use
+factorization or divisor enumeration instead of allocating up to their value.
+The repository also includes runnable \texttt{divisor\_queries.cpp} and
+\texttt{segmented\_primes.cpp} examples beside the prime query program.

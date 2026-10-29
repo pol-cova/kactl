@@ -1,0 +1,34 @@
+\documentclass[9pt,a4paper,notitlepage]{extreport}
+\usepackage{kactlpkg}
+\kactlcontentdir{content}
+\university{Mexico finals -- Math}{Mexico finals}{kth}
+\team{Mexico finals}{Team reference}
+\contest{Mexico finals}{2026-11-08}
+\makeatletter
+\newcommand{\sourceimport}[2]{%
+  \begingroup\def\@kactldir{content/#1}\kactlimport{#2}\endgroup}
+\makeatother
+\setcounter{tocdepth}{1}
+\renewcommand{\contentsname}{Lookup}
+\renewcommand{\cftbeforetoctitleskip}{0pt}
+\renewcommand{\cftaftertoctitleskip}{4pt}
+\renewcommand{\cfttoctitlefont}{\Large\bfseries}
+\renewcommand{\cftchapfont}{\normalsize\bfseries}
+\renewcommand{\cftbeforechapskip}{4pt}
+\begin{document}
+\setlength{\parskip}{2pt}
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+\begin{multicols*}{3}
+\raggedcolumns
+\noindent{\Large\bfseries Math reference}\par
+\textbf{Latin American regional preparation.} C++17; zero-based indices;
+array ranges $[l,r)$ unless stated. Choose the model, check bounds, then type.
+Edition 2026-10-28.\par
+\tableofcontents
+\thispagestyle{fancy}
+\kactlchapter{finals-math}
+\end{multicols*}
+\end{document}

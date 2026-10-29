@@ -1,0 +1,233 @@
+% Include as a fragment in the patterns handbook; the root supplies the
+% KACTL package, Prelude, landscape page, 10pt type, and two-column layout.
+\section{Model and pattern cases}
+
+These cases train the step before coding: translate the story into objects,
+states, and constraints, then choose the smallest tool that preserves what
+the answer needs. The first two cases are real contest problems with links to
+their statements and official solution material. The last two are synthetic
+models designed to expose reusable reductions.
+
+\subsection{Case: intervals - Regional 2024 J, \emph{Jigsaw of Shadows}}
+\label{case:intervals}
+
+The statement gives an angle $\theta$, then $N$ flatlanders at distinct road
+positions $X_i$, each of height $H_i$. Each casts a shadow eastward; report
+the total road length covered, counting overlap once. The input bound is
+$N\le 10^5$, $10\le\theta\le80$ degrees, $X_i\le3\cdot10^5$,
+$H_i\le1000$, and output error may be $10^{-4}$. See the
+\href{https://codeforces.com/gym/105505/attachments/download/28244/contest_onesided.pdf}{official
+statement} and \href{https://codeforces.com/gym/105505/attachments/download/28286/icpcla24_solution_sketches.pdf}{official
+solution sketches}.
+
+The story looks like geometry, but the requested object is one-dimensional
+length. A right triangle gives shadow length $L_i=H_i\cot(\theta)$, so each
+person contributes the closed interval $[X_i,X_i+L_i]$. Once represented this
+way, none of the other people interact geometrically: only interval overlap
+matters. This is a useful recognition cue for rays, projected objects,
+coverage windows, and occupied time ranges: derive each range, then ask
+whether the answer is the union, intersection, count, or maximum depth.
+
+Convert degrees before calling trigonometry:
+\verb@rad = theta * acos(-1.0) / 180.0@ and
+\verb@L = H * cos(rad) / sin(rad)@. Build the vector of endpoint pairs and
+call \verb@finals_core::merge_intervals<double>(intervals)@. That helper
+sorts by left then right endpoint, skips zero-length intervals, and merges
+overlap or touching endpoints. Sum \verb@r-l@ over the returned disjoint
+intervals. The exact helper returns intervals rather than their measure, so
+it can also support later queries about gaps or merged components.
+
+Synthetic trace with $\theta=60^\circ$:
+$(X,H)=(50,150),(0,100),(100,200)$. Their lengths are about $86.6025$,
+$57.7350$, and $115.4701$. After sorting, the ranges are
+$[0,57.7350]$, $[50,136.6025]$, and $[100,215.4701]$. Each overlaps the
+current covered prefix, so the merged range is $[0,215.4701]$ and the answer
+is about $215.47$. Summing raw shadow lengths counts the shared road more
+than once.
+
+Sorting dominates at $O(N\log N)$ time; merging and summing use $O(N)$ time
+and memory. A sweep over compressed real endpoints can also work, but each compressed
+gap must retain its original length. Counting compressed indices would
+lose geometry: integer road positions do not imply integer shadow endpoints. A sweep over start/end events also works, but adds
+event ordering and active-count logic when a single sorted merge is enough.
+If the task changes to count how many shadows cover each query point, retain
+the event sweep or a sorted endpoint structure. If it asks for the uncovered
+gaps inside a finite road, clip first and keep the merged ranges. The sample
+allows floating output; keep the computation in double and do not round
+individual endpoints before merging.
+
+Practice: two shadows are $[2,7]$ and $[7,9]$. What is the union length?
+Answer: $7$, because the touching point contributes no length twice; the
+helper merges them to $[2,9]$.
+
+\subsection{Case: flip - Masters Mexico 2022 F, \emph{Flip}}
+\label{case:flip}
+
+The real problem starts from an all-white $3\times3$ board. Clicking a cell
+toggles it and its orthogonal neighbors that exist; find the minimum clicks
+for a given target. The statement guarantees a solution and has at most 50
+boards. Read the \href{https://acm.iteso.mx/share/ICPCMXMasters2022_problems.pdf}{official
+problem book}, page 9 (problem F). This is a compact instance of a broader
+recognition rule: if an action is binary, its effects are fixed, actions
+commute, and the number of actions is tiny, enumerate action subsets before
+reaching for search or linear algebra.
+
+Number cells row-major from 0 to 8. Represent a board as a 9-bit unsigned
+mask, with bit $r\cdot3+c$ set when that cell is black. For each cell $i$,
+precompute an effect mask containing $i$ and its in-bounds up/down/left/right
+neighbors. A press subset $p$ changes state by XOR with the XOR of all
+selected effect masks. Since each click toggles and clicks commute, pressing
+one cell twice cancels; therefore some minimum solution uses each cell zero
+or one times. Every candidate is one of $2^9=512$ masks. Count its set bits
+and keep the least count among candidates whose combined effect equals the
+target.
+
+The implementation module provides
+\verb@finals_cases::min_toggle_count(effects, start, target)@. Here
+\verb@effects[i]@ is the mask toggled by action $i$; \verb@start@ and
+\verb@target@ use the same bit layout. It returns the minimum number of
+actions or $-1$ if unreachable, with a maximum of 20 actions. For this
+problem use start mask zero. Parse each row by shifting left or setting bit
+$3r+c$ for each \verb@*@, and construct effects using bounds checks rather
+than wrapping neighbors across a row.
+\sourceimport{finals-patterns}{ToggleSubsets.h}
+
+Synthetic trace:
+\begin{lstlisting}
+**.
+*..
+...
+\end{lstlisting}
+The target mask has bits $0,1,3$ set. Pressing cell 0 toggles exactly cells
+$0,1,3$, so this subset has size 1 and reaches the target. No zero-click
+subset can produce a nonzero target, so the minimum is 1. The next sample
+board can be tested by the same loop; the routine does not rely on visual
+symmetry or board rotation.
+
+The cost is $O(2^k\cdot k)$ time and $O(k)$ effect storage for $k$ actions;
+the stated helper limit is $k\le20$. Exhaustive enumeration is clearer and
+more reliable here than a generic graph shortest path, because the cost is
+the number of chosen independent actions and each subset has one direct
+result. Gaussian elimination over $\mathbb F_2$ can find a solution for a
+larger linear system, but it does not by itself minimize the number of set
+variables; minimum-weight solutions require extra work. If the board grows
+to a narrow strip, a row-mask DP may exploit width. If actions have different
+costs or dependencies, subset enumeration can still work at small $k$, but
+the objective or legal-subset test must change. Do not use a bit-shift mask
+when $k$ exceeds the width of its integer type; use multiple words or a
+different representation.
+
+Practice: two actions toggle masks $0011$ and $0110$, and the target is
+$0101$ from zero. Is it reachable? Yes. Pressing both actions produces
+$0011\mathbin{\mathtt{XOR}}0110=0101$, so the minimum is two. Effects combine
+by XOR, not OR.
+
+\subsection{Case: matching or flow - assigning work with quotas}
+\label{case:matching}
+
+Synthetic example: jobs $A$ and $B$ each need one worker. Worker Red can do
+either job and worker Blue can do only $A$; each worker can take at most one
+job. Can both jobs be assigned? Model jobs and individual workers as the two
+sides of a bipartite graph; an edge means the assignment is allowed. A
+matching selects edges with no shared endpoint. Here $A\to$ Blue and
+$B\to$ Red is a complete assignment.
+
+For a standard one-to-one case, build adjacency list \verb@g[job]@ of worker
+indices, initialize the right-match array to $-1$, and call
+\verb@hopcroftKarp(g, rightMatch)@. Its returned size is the largest number
+of jobs that can be assigned. It runs in $O(E\sqrt V)$, where $E$ is the
+number of allowed pairs and $V$ the number of vertices; each job and worker
+must be used at most once, and the objective is unweighted cardinality.
+Use this direct helper when those constraints exactly match the story.
+
+Now extend the example: Red is a team with two workers, both able to do $A$
+or $B$; Blue still has one worker who can do only $A$. A team node with
+capacity one would incorrectly restrict Red to one job. Model source $s$,
+job nodes, team nodes, and sink $t$. Add $s\to$ each job with capacity 1;
+each allowed job-to-team edge has capacity 1; add Red-to-$t$ with capacity 2
+and Blue-to-$t$ with capacity 1. A unit of integral flow along
+$s\to job\to team\to t$ is one assignment. The invariant is flow
+conservation at every job/team node, plus edge capacities; integer
+capacities guarantee an integral maximum flow. Run Dinic from $s$ to $t$.
+Both source edges saturated means both jobs were assigned.
+
+Send $B$ to Red and $A$ to Blue, for flow value 2 and a complete assignment.
+If Blue is removed, Red's two workers can still take both jobs. This shows
+why a team quota belongs on the team-to-sink edge: source-to-job edges model
+job demand, while team-to-sink edges model available worker capacity.
+
+Use the supplied \verb@Dinic f(n); f.addEdge(u,v,cap); f.calc(s,t)@ helper
+when capacities or shared bottlenecks matter. Its flow cost depends on the
+network and capacities; for the unit-capacity bipartite construction the
+specialized Hopcroft--Karp bound is $O(E\sqrt V)$ and is usually the simpler
+guarantee. If preferences have costs, use min-cost flow rather than plain
+maximum flow. If each person may receive several jobs, increase that worker-to-sink
+capacity; if a team quota has a lower bound, ordinary max flow alone does not
+enforce it. A weighted matching helper may fit a dense assignment with
+one-to-one capacities, but the flow model is more adaptable when quotas or
+intermediate resource limits appear.
+
+Practice: remove worker Blue from the two-job example. What is the maximum
+assignment size? Answer: 2. Both jobs can go to Red's two workers.
+
+\subsection{Case: capacity - binary search plus a greedy proof}
+\label{case:capacity}
+
+Synthetic scheduling task: jobs arrive in a fixed order with nonnegative
+durations. Split them into at most $k$ nonempty contiguous groups, and
+minimize the largest group sum. Jobs cannot be reordered or split. Example
+durations are $[4,2,3,5]$ with $k=2$. First define the decision question: for
+capacity $C$, can
+the jobs be assigned to at most $k$ groups so every group sum is at most
+$C$? Increasing $C$ can only make a previously feasible grouping remain
+feasible, so the predicate has the form false, false, ..., true, true.
+
+For a fixed $C$, scan left to right and append each job to the current group
+if it fits; otherwise close that group and start the next with the job. This
+greedy scan uses the fewest possible groups: its first group consumes the
+longest prefix whose sum is at most $C$. Any feasible partition's first
+group ends no later; remove the greedy prefix and repeat the same argument
+on the suffix. Thus if greedy needs at most $k$ groups, a valid partition
+exists; if it needs more, no partition can do better. The invariant during
+the scan is that the current group is the maximal feasible prefix not yet
+closed and the group count is the minimum needed for the processed prefix.
+
+Use the largest job as the lower bound: any feasible capacity must be at
+least this large, though the bound itself need not be infeasible. The sum of
+all jobs is a feasible upper bound (one group always fits). Call
+\verb@finals_cases::min_contiguous_capacity(a, groups)@; it assumes
+nonnegative jobs, a sum fitting in \verb@long long@, and returns 0 for an
+empty list. The helper finds the minimum feasible integer capacity by
+monotone binary search and the greedy test. With $n$ jobs and total sum $S$,
+this is $O(n\log(S+1))$ time and $O(1)$ extra space, aside from the input.
+
+Trace the example. At $C=7$, greedy forms $[4,2]$, then $[3]$, then $[5]$:
+three groups, so infeasible. At $C=8$, it forms $[4,2]$ and $[3,5]$: two
+groups, so feasible. Binary search narrows the integer boundary between
+these cases; 8 is the minimum. A tempting wrong predicate is ``greedy uses
+exactly $k$ groups.'' It can become true and later false as capacity grows,
+so it is not the monotone decision question. For $[2,2,2]$ and $k=2$, it
+uses three groups at $C=2$, exactly two at $C=4$, and one at $C=6$; this
+false/true/false sequence cannot be binary-searched as a first-true test.
+
+The local helper avoids a common midpoint bug by using
+\verb@lo + (hi-lo)/2@. Its half-open search discards tested infeasible
+capacities; the original upper bound is a proven feasible fallback. The
+lower bound itself need not be infeasible. The exact API returns
+the minimum capacity, so the caller does not need to reproduce the search.
+If groups must be exactly $k$, at-most-$k$ feasibility needs an extra proof:
+with nonnegative jobs, any group can be split until there are $k$ groups
+provided $k\le n$ and empty groups are forbidden; this follows by splitting
+multi-job groups without increasing their sums. If negative durations are
+allowed, this greedy prefix proof fails: extending a group can reduce its
+sum, so taking the longest feasible prefix need not minimize the group count.
+Feasibility itself remains monotone in $C$: every partition feasible at $C$
+remains feasible at a larger capacity. If jobs may be
+reordered, sorting or a different partition model may be needed. If the
+objective is minimizing the largest number of jobs rather than total weight,
+the feasibility test changes even though binary search may still apply.
+
+Practice: durations $[6,1,4]$, at most two groups. Is capacity 5 feasible?
+Answer: no; the first job alone exceeds 5.
+Capacity 6 is feasible with $[6]$, $[1,4]$, so the minimum is 6.
+\sourceimport{finals-patterns}{CapacitySearch.h}
