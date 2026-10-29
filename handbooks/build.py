@@ -95,4 +95,10 @@ if __name__=='__main__':
     generate('core.hpp',CORE,'finals-implementations','finals_core',CORE_DEPS)
     generate_digit()
     generate('case_studies.hpp',CASES,'finals-patterns','finals_cases',{})
+    generate('practical.hpp',['LinkedSort','AtomicInventory','OfflineThreshold'],
+             'finals-practical','finals_practical',{'OfflineThreshold':['LinkedSort']})
+    generate('math_extra.hpp',['Divisors','PrimeExponents','GCDPairs','GCDOrbits'],
+             'finals-math-extra','finals_math_extra',{})
+    generate('dp_extra.hpp',['SubsetOrder','TreeMatching','SubtreeRanges','Unranking'],
+             'finals-dp-extra','finals_dp_extra',{})
     if not opts.generate_only:build()

@@ -1,4 +1,4 @@
-# Validation of the October 19 edition
+# Validation of the October 28 edition
 
 ## Commands run locally
 
@@ -8,7 +8,7 @@ CXX=clang++ SANITIZE=1 sh handbooks/test.sh
 python3 handbooks/build.py
 ```
 
-All seven test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
+All ten test programs passed in optimized C++17 builds and with AddressSanitizer plus UndefinedBehaviorSanitizer. Flags include `-Wall -Wextra -Wshadow`. The sanitizer run uses `-O1 -g`; the ordinary run uses `-O2`. Tests use fixed seeds and assertions, without `NDEBUG`.
 
 ## Independent oracles and boundaries
 
@@ -29,7 +29,7 @@ The integration program, `native_modules_test.cpp`, compiles the 29 core/math ge
 
 ## PDF checks
 
-The final editions use native KACTL A4 landscape. Math and implementation references use three columns; the worked-patterns book uses two columns and 10pt prose for derivations. The PDFs have 4, 8, and 14 pages respectively. Numbered contents and in-book page references connect recognition cues to worked cases. Code uses native source imports and hashes. All pages were rendered and inspected for clipping, overlaps, tables, and headers. Builds finish without LaTeX errors, undefined references, or overfull-box warnings. Page boxes were verified as landscape.
+The final editions use native KACTL A4 landscape. Math and implementation references use three columns; the worked-patterns book uses two columns and 10pt prose for derivations. The PDFs have 5, 10, and 17 pages respectively. Numbered contents and in-book page references connect recognition cues to worked cases. Code uses native source imports and hashes. All pages were rendered and inspected for clipping, overlaps, tables, and headers. Builds finish without LaTeX errors, undefined references, or overfull-box warnings. Page boxes were verified as landscape.
 
 The source and build scripts are editable. Original KACTL headers are printed through the unchanged native preprocessor. Generated helper modules carry authorship, source, description and validation status metadata.
 
@@ -42,3 +42,15 @@ These are local oracle checks, not new online-judge acceptances. Full maximum-co
 Helper source lines fit 63 columns using two-space tab stops. Formatting is committed; builds do not require clang-format. Reference notes retain preconditions, costs, and selection cues. The separate worked book supplies derivations, counterexamples, traces, adaptation boundaries, and practice answers without a page-count cap. The regional and Mexico/Masters round-three reports distinguish primary-source examples from the older provisional regional classifications. Mexico/Masters coverage is a spot audit, not a complete historical corpus.
 
 Case review corrected numerical traces, clarified that negative weights break a particular greedy solver rather than the monotonicity of capacity feasibility, and distinguished team capacity edges from job-demand edges. Primary-source facts and independent derivations are separated in the three pattern-source ledgers.
+
+## October 28 expansion
+
+The three new suites run against both authoritative sources and generated printed modules. Together with the case-studies rerun, ten test programs produce fourteen executions per test mode. Optimized Clang C++17 and AddressSanitizer/UndefinedBehaviorSanitizer runs pass. All 14 new generated headers also compile independently with KACTL macros and aliases; the previous 35-header validation remains recorded above.
+
+- Math: all divisors for 1..300 against direct enumeration; minimum kth-power multipliers for n=1..80 and k=1..4 against enumerated perfect powers, with an overflow case; factorial valuations against factoring each factorial term; 500 GCD histograms and equality checks against pair enumeration; circle cycles for n=1..80 and steps -100..100 against explicit walks.
+- DP/trees: 400 complete cost matrices against all permutations; 600 small trees against all matching edge subsets and explicit ancestor walks for subtree ranges; every valid binary string through length 12 against rank reconstruction, plus an unsigned-rank saturation boundary.
+- Practical: 1,000 linked-array cases against sorted key/index records; 500 inventories with 20 successive requests each against full per-order accumulation; oversized 64-bit request rollback; 300 arrays with 30 threshold queries each against direct scans.
+
+The three PDFs were rebuilt, all pages rendered and visually checked, and selected new code pages inspected at larger size. No overfull boxes or undefined references were reported. The incorrect Flip board illustration was fixed to rows **., *.., ... . Passing code tests alone did not establish the correctness of the old illustration.
+
+Preconditions remain explicit: positive bounded GCD inputs, distinct prime factor bases, valid recipe IDs and nonnegative quantities, valid query intervals, symmetric adjacency for trees, and bounded complete cost matrices. The helpers do not claim to validate every caller precondition. The binary unranking example is synthetic and does not implement the entire 2024 Inversion Insight solution.

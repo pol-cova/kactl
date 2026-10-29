@@ -10,9 +10,11 @@ Three native KACTL landscape books built around the team's reported weaknesses a
 
 Start with the worked book when the algorithm is unclear. Use its recognition routes, then the worked case, and finally the matching implementation. The math and implementation references keep three columns for lookup. The worked book uses two columns and 10pt prose for derivations. All three use `content/tex/kactlpkg.sty`, landscape pages, numbered contents, and native code imports. There is no page-count target.
 
-The worked book includes 14 cases: signed prefix counts; approximation; single-fraction decimals; smallest missing subset sum; exact scaling; parity-state BFS; hazard deadlines; Enigma reconstruction; Fundraising dominance DP; interval union; toggle subsets; assignment/flow; capacity search; and budget DP. Named contest problems and synthetic exercises are labeled separately. Displaying Decimals is explicitly a component walkthrough, not a complete all-pairs implementation.
+The original worked section includes 14 cases: signed prefix counts; approximation; single-fraction decimals; smallest missing subset sum; exact scaling; parity-state BFS; hazard deadlines; Enigma reconstruction; Fundraising dominance DP; interval union; toggle subsets; assignment/flow; capacity search; and budget DP. Named contest problems and synthetic exercises are labeled separately. Displaying Decimals is explicitly a component walkthrough, not a complete all-pairs implementation.
 
-`include/core.hpp`, `include/math.hpp`, `include/digit_dp.hpp`, and `include/case_studies.hpp` hold the C++ helpers. The builder generates the printed headers directly from these files. Edit native chapter/fragment files for printed prose; the longer Markdown files remain background reading. Keep the original `kactl.pdf` for wider specialist coverage.
+The October 28 expansion adds ordered subset DP, tree matching, subtree flattening, and ranked reconstruction. The references add divisor enumeration, prime-exponent transformations, exact GCD pair counts, circle orbits, linked sorting, atomic inventory consumption, and offline threshold queries. The Flip board illustration is corrected.
+
+`include/core.hpp`, `include/math.hpp`, `include/digit_dp.hpp`, `include/case_studies.hpp`, `include/math_extra.hpp`, `include/dp_extra.hpp`, and `include/practical.hpp` hold the C++ helpers. The builder generates the printed headers directly from these files. Edit native chapter/fragment files for printed prose; the longer Markdown files remain background reading. Keep the original `kactl.pdf` for wider specialist coverage.
 
 ## Conventions
 

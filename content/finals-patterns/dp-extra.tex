@@ -1,0 +1,125 @@
+\sourceimport{finals-dp-extra}{Prelude.h}
+\section{Three reusable DP and tree patterns}
+These small models cover different shapes of dependency: a subset of
+completed tasks, a parent-child choice, and a contiguous subtree range.
+First identify which previous decisions can affect the next one. If that
+information is a subset, use subset DP; if choices only interact across
+tree edges, root the tree; if every query asks about descendants, flatten
+the tree before selecting a range structure.
+
+\subsection{Order every item once: subset Hamiltonian path}
+Suppose each ordered pair of distinct jobs has a transition cost, and all
+jobs must be done once with the least total transition cost. A greedy
+``take the cheapest next job'' can block a good continuation. For example,
+with costs $0\to1=1$, $0\to2=2$, $1\to2=100$, $2\to1=1$,
+and both edges back to 0 costing 100, greedy
+from 0 chooses 1 and pays 101; the order $0,2,1$ costs 3. The missing
+information is which jobs have already been used.
+
+Define $dp[S][v]$ as the least cost of an ordering of exactly the set
+$S$, ending at $v$. Its last transition comes from a path on
+$S\setminus\{v\}$ ending at some $u$:
+\[
+ dp[S][v]=\min_{u\in S\setminus\{v\}}
+       (dp[S\setminus\{v\}][u]+c[u][v]).
+\]
+For a singleton, $dp[\{v\}][v]=0$: the start is unrestricted and no
+edge has yet been paid. The answer is $\min_v dp[All][v]$, since the
+endpoint is also unrestricted. On the example, $dp[\{0,2\}][2]=2$,
+then $dp[All][1]=3$. This is the Held--Karp subset recurrence: $O(n^2 2^n)$
+time and $O(n2^n)$ memory. Store predecessor vertices if the order is
+needed. The tested helper returns only the cost and enforces $1\le n\le18$.
+
+\sourceimport{finals-dp-extra}{SubsetOrder.h}
+This model changes if the route must start at a fixed vertex (initialize
+only that singleton), must return to start (add the closing edge), or may
+skip jobs (change the objective and permitted terminal masks; with nonnegative costs,
+freely skipping every job makes the optimum trivial). Precedence constraints require
+rejecting transitions that place a job before its prerequisites. For
+larger $n$, the exponential state count is the limit; use problem structure
+such as bitmask width, meet-in-the-middle, or a different optimization.
+
+\subsection{Pair disjoint endpoints in a tree}
+For a tree, maximize the number of edges chosen so no two share an endpoint.
+This is maximum matching, a useful starter when the statement says
+``pair people/items across links'' and each endpoint can be used once. A
+global greedy choice is risky: a locally attractive edge can consume a
+vertex needed by multiple later choices. Root the tree; choices in
+different child subtrees become independent once we record whether the
+root is already paired with one child.
+
+Let $free[u]$ be the best matching in the subtree when $u$ is not matched
+to a child; let $best[u]$ allow either status. Then
+\[
+ free[u]=\sum_{v child}best[v],\qquad
+ best[u]=\max\left(free[u],\max_{v child}
+   \left(1+free[v]+\sum_{w\ne v}best[w]\right)\right).
+\]
+If $u$ is paired with $v$, that edge contributes one and $v$ cannot be
+paired below itself, which explains $free[v]$. For a root with two leaf
+children, $free=0$ and $best=1$: choose either edge. Each child is
+considered as the one partner, so the recurrence is linear in total tree
+degree. Supply symmetric adjacency for a connected simple tree. The implementation checks
+endpoints, arc count, cycles, and connectivity, and
+builds parent/order iteratively, then computes states in reverse order;
+this avoids recursion depth failures on a chain.
+
+\sourceimport{finals-dp-extra}{TreeMatching.h}
+This assumes every edge has equal value and the goal is cardinality. With
+edge weights, replace the added one with that edge's weight. If vertices
+have capacities above one, the two-state recurrence no longer captures
+their remaining capacity. If the graph has cycles, child subproblems are
+not separated by one parent edge; use a graph matching algorithm instead.
+
+\subsection{Turn descendants into a range}
+When many queries ask for the sum, count, minimum, or updates over a node's
+subtree, answering each by walking descendants can cost $O(n)$ per query.
+In a rooted tree, a preorder DFS visits each subtree consecutively. Record
+the position $tin[u]$ when $u$ is appended, and $tout[u]$ as the exclusive
+end after all descendants. Then subtree $u$ is exactly the half-open range
+$[tin[u],tout[u])$ in the flattened order. For example, root 0 with
+children 1 and 2, where 1 has child 3, may flatten to $[0,1,3,2]$:
+subtree 1 is positions $[1,3)$ and subtree 2 is $[3,4)$.
+
+\sourceimport{finals-dp-extra}{SubtreeRanges.h}
+Use a Fenwick tree for point updates and subtree sums: add a node's value
+at $tin[u]$, and query the flattened interval. Offline threshold counts
+can sort both events and nodes by value; activate nodes whose value meets
+the current threshold in a Fenwick tree over $tin$, then ask the subtree
+range sum. For example, if flattened values are $[5,2,7,4]$, the query
+``count values at least 5 in subtree 1'' activates positions 0 and 2 and
+returns the sum on $[1,3)$, namely 1.
+
+The flattening supports any range structure, but it does not make arbitrary
+path queries contiguous. Fixed-root subtree queries and path queries are
+different models. Re-rooting queries also change which vertices are descendants.
+
+\subsection{Find the kth object by skipping completion blocks}
+Synthetic task: list length-$n$ binary strings with no adjacent ones in
+lexicographic order and return rank $k$, starting from rank 1. Leading zeroes
+are allowed. Do not generate all strings: count how many completions begin
+with 0, then decide whether to stay in that block or skip it.
+
+Let $W[L]$ count valid strings of length $L$ with no preceding 1.
+$W[0]=1$, $W[1]=2$, and $W[L]=W[L-1]+W[L-2]$: start with 0 and any
+valid suffix, or start with 10 and a shorter suffix. During reconstruction,
+a preceding 1 forces 0. Otherwise the 0-block has $W[L-1]$ completions.
+If $k$ is at most that count, choose 0. Otherwise subtract the count and
+choose 1. Each prefix defines a contiguous block in lexicographic order.
+
+For $n=3$, the list is $000,001,010,100,101$. At rank 4, the 0-block has
+three entries, so skip it and choose 1 with new rank 1. Then 0 is forced;
+the final digit is 0. The answer is 100.
+\sourceimport{finals-dp-extra}{Unranking.h}
+Counts used for rank comparisons must not be reduced modulo a prime. The
+helper caps every count at the original requested rank using overflow-safe
+addition. A capped count still tells whether the current rank fits, because
+the current rank never increases. Cap at the original rank, not at a changing
+rank while building the table. The helper returns no answer for an invalid
+rank and handles $n=0$ as one empty string.
+
+For a different object, derive its completion-count state first. Ordering
+permutations by inversion count and then lexicographically, as in 2024 I,
+needs a different recurrence and proved bounds; this binary-string helper
+is not its solution. The reusable step is counting, skipping, and updating
+the residual rank. Test reconstruction by enumerating all small objects.

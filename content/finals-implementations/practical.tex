@@ -1,0 +1,91 @@
+\section{Keep linked values together when sorting}
+\textbf{Recognize:} each object has several fields, but only one field
+chooses the order. Sorting each array independently destroys the objects.
+Prefer one record per object when you control the representation:
+\begin{lstlisting}
+struct Row { int key, price, quantity, id; };
+vector<Row> rows;
+stable_sort(rows.begin(), rows.end(),
+    [](const Row& a, const Row& b) {
+        return a.key < b.key;
+    });
+\end{lstlisting}
+If the input already uses parallel arrays, sort indices once and apply the
+same permutation to every array. With keys $[4,1,4]$, prices $[40,10,41]$
+and quantities $[2,9,3]$, the permutation $[1,0,2]$ preserves both equal-key
+records in input order. Sorting prices separately would lose that association.
+\sourceimport{finals-practical}{Prelude.h}
+\sourceimport{finals-practical}{LinkedSort.h}
+\begin{lstlisting}
+auto p = finals_practical::sorted_indices(arr1);
+arr1 = finals_practical::reordered(arr1, p);
+arr2 = finals_practical::reordered(arr2, p);
+arr3 = finals_practical::reordered(arr3, p);
+\end{lstlisting}
+All arrays must have the same length. This is linked sorting, not coordinate
+compression: compression replaces distinct values with ranks. For a secondary
+key, compare \texttt{tie(a.key,a.price)}; for descending primary order reverse
+only that comparison. Never use \texttt{<=} in a sort comparator. Do not
+compare by subtraction, which can overflow. Stable input-order ties are a
+choice, not the correct tie rule for every DP; strict dominance needs the
+batching described in Fundraising.
+
+\section{Recipes and inventory: validate, then commit}
+\textbf{Recognize:} an operation consumes several shared resources and must
+succeed completely or leave the state unchanged. Accumulate its requirements
+first, check every limit, then subtract once. This pattern applies to recipes,
+warehouse orders, machine resources, and bundles of tickets.
+
+If stock is $[5,4]$, recipe A needs $(0,2),(1,1)$ and recipe B needs $(0,2)$,
+order $[A,B]$ consumes $[4,1]$, leaving $[1,3]$. A second order $[A]$ fails
+and must leave $[1,3]$ unchanged. Repeated dishes and repeated ingredient IDs
+within a recipe both add to the requirement; a set would be incorrect.
+\sourceimport{finals-practical}{AtomicInventory.h}
+\begin{lstlisting}
+finals_practical::Inventory inv(stock);
+int accepted = 0;
+for (const auto& order : orders) {
+    if (!inv.consume(recipes, order)) break;
+    ++accepted;
+}
+\end{lstlisting}
+This loop answers the number of consecutive fulfillable orders, stopping at
+the first failure, as in the supplied example. If the problem says to reject
+an impossible order and continue, use \texttt{continue} instead of
+\texttt{break}. If it lets you choose or reorder orders to maximize acceptance,
+this simulation does not solve the optimization problem.
+
+\textbf{Bounds:} use 64-bit stock and quantities. Each is nonnegative;
+check \texttt{q > stock[id]-need[id]} before adding, so even an oversized
+request cannot overflow. All recipe and ingredient IDs must be valid; convert
+one-based input exactly once. Zero quantities and empty orders are supported.
+Negative quantities would invalidate the early-failure argument.
+
+The touched-index list clears only ingredients examined in this order, rather
+than allocating and scanning an $N$-entry array every time. Initialization is
+$O(N)$; each call costs its dish count plus expanded ingredient entries and
+touched indices. Repeated large recipes still cost work per occurrence.
+Orders may be read and processed one at a time to avoid storing them all.
+When an early order fails, still read remaining input if a surrounding
+multi-test-case format requires it.
+
+\section{Offline queries: activate values in threshold order}
+\textbf{Recognize:} a fixed array, many interval queries, and each query
+counts values at least a threshold. Queries can be answered out of input
+order, then restored using their original indices. Sort values and queries
+by decreasing threshold. Before answering a query, activate every array
+position whose value is at least its threshold. A Fenwick tree stores one
+at active positions, so a range sum gives the count.
+\sourceimport{finals-practical}{OfflineThreshold.h}
+For $a=[5,2,7,4]$ and query $[1,4)$ with threshold 5, positions 0 and 2
+are active; only position 2 lies in the interval, so the answer is 1.
+At threshold 4, activate position 3 too and the answer becomes 2.
+Equal values must be activated before an inclusive query. For strictly
+greater values, change the activation comparison to \texttt{>}.
+
+This preserves the original array indices; sorting the values and then
+querying their sorted positions would answer a different question. All
+ranges must satisfy $0\le l\le r\le n$. The array is static: interleaved
+updates require a different method. After Euler flattening, this same
+helper answers threshold queries on subtrees. The output order matches
+the query input order even though evaluation order changes.
