@@ -13,7 +13,7 @@ for source in handbooks/tests/*_test.cpp; do
     "${CXX:-c++}" -std=c++17 "$@" -Wall -Wextra -Wshadow \
         "$source" -o "$build_dir/$name"
     "$build_dir/$name"
-    if [ "$name" = case_studies_test ] || [ "$name" = math_extra_test ] || [ "$name" = dp_extra_test ] || [ "$name" = practical_test ]; then
+    if [ "$name" = case_studies_test ] || [ "$name" = math_extra_test ] || [ "$name" = dp_extra_test ] || [ "$name" = practical_test ] || [ "$name" = number_queries_test ]; then
         "${CXX:-c++}" -std=c++17 "$@" -Wall -Wextra -Wshadow -DCASE_NATIVE \
             "$source" -o "$build_dir/case_native"
         "$build_dir/case_native"

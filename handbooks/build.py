@@ -101,4 +101,6 @@ if __name__=='__main__':
              'finals-math-extra','finals_math_extra',{})
     generate('dp_extra.hpp',['SubsetOrder','TreeMatching','SubtreeRanges','Unranking'],
              'finals-dp-extra','finals_dp_extra',{})
+    generate('number_queries.hpp',['PrimeQueries','SegmentedPrimes','DivisorTable'],
+             'finals-number','finals_number',{'SegmentedPrimes':['PrimeQueries']})
     if not opts.generate_only:build()

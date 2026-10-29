@@ -29,7 +29,7 @@ The integration program, `native_modules_test.cpp`, compiles the 29 core/math ge
 
 ## PDF checks
 
-The final editions use native KACTL A4 landscape. Math and implementation references use three columns; the worked-patterns book uses two columns and 10pt prose for derivations. The PDFs have 5, 10, and 17 pages respectively. Numbered contents and in-book page references connect recognition cues to worked cases. Code uses native source imports and hashes. All pages were rendered and inspected for clipping, overlaps, tables, and headers. Builds finish without LaTeX errors, undefined references, or overfull-box warnings. Page boxes were verified as landscape.
+The final editions use native KACTL A4 landscape. Math and implementation references use three columns; the worked-patterns book uses two columns and 10pt prose for derivations. The PDFs have 6, 10, and 17 pages respectively. Numbered contents and in-book page references connect recognition cues to worked cases. Code uses native source imports and hashes. All pages were rendered and inspected for clipping, overlaps, tables, and headers. Builds finish without LaTeX errors, undefined references, or overfull-box warnings. Page boxes were verified as landscape.
 
 The source and build scripts are editable. Original KACTL headers are printed through the unchanged native preprocessor. Generated helper modules carry authorship, source, description and validation status metadata.
 
@@ -54,3 +54,9 @@ The three new suites run against both authoritative sources and generated printe
 The three PDFs were rebuilt, all pages rendered and visually checked, and selected new code pages inspected at larger size. No overfull boxes or undefined references were reported. The incorrect Flip board illustration was fixed to rows **., *.., ... . Passing code tests alone did not establish the correctness of the old illustration.
 
 Preconditions remain explicit: positive bounded GCD inputs, distinct prime factor bases, valid recipe IDs and nonnegative quantities, valid query intervals, symmetric adjacency for trees, and bounded complete cost matrices. The helpers do not claim to validate every caller precondition. The binary unranking example is synthetic and does not implement the entire 2024 Inversion Insight solution.
+
+## Prime and divisor query follow-up
+
+`number_queries_test.cpp` passed optimized and sanitizer builds against both authoritative and generated printed modules. It checks primality through 10,000 by trial division; 1,000 random inclusive count/list queries; 1,208 small segmented intervals; narrow intervals near 10^6, 10^9, and 10^12; all divisor counts/sums through 1,000 by direct enumeration; and invalid-range rejection. All three complete example programs compiled and produced their expected sample output. This adds one test program and two executions per mode to the full runner, now eleven programs and sixteen executions. The earlier unchanged suites retain the checks recorded above.
+
+Only the math PDF was rebuilt for this addition, now six pages. All its pages were rendered and checked, with the new code page inspected at full size; no overfull boxes or undefined references were reported. Bounds in the documentation are enforced by the helper constructors/functions; no unrestricted 64-bit prime-counting claim is made.

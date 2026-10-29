@@ -14,7 +14,7 @@ The original worked section includes 14 cases: signed prefix counts; approximati
 
 The October 28 expansion adds ordered subset DP, tree matching, subtree flattening, and ranked reconstruction. The references add divisor enumeration, prime-exponent transformations, exact GCD pair counts, circle orbits, linked sorting, atomic inventory consumption, and offline threshold queries. The Flip board illustration is corrected.
 
-`include/core.hpp`, `include/math.hpp`, `include/digit_dp.hpp`, `include/case_studies.hpp`, `include/math_extra.hpp`, `include/dp_extra.hpp`, and `include/practical.hpp` hold the C++ helpers. The builder generates the printed headers directly from these files. Edit native chapter/fragment files for printed prose; the longer Markdown files remain background reading. Keep the original `kactl.pdf` for wider specialist coverage.
+`include/core.hpp`, `include/math.hpp`, `include/digit_dp.hpp`, `include/case_studies.hpp`, `include/math_extra.hpp`, `include/dp_extra.hpp`, and `include/practical.hpp`, and `include/number_queries.hpp` hold the C++ helpers. The builder generates the printed headers directly from these files. Edit native chapter/fragment files for printed prose; the longer Markdown files remain background reading. Keep the original `kactl.pdf` for wider specialist coverage.
 
 ## Conventions
 
@@ -54,3 +54,17 @@ The worked edition adds five tested adaptations: strict donation chains, hazard-
 See [provenance](research/provenance.md), [coverage audit](research/coverage-audit.md), and [validation](VALIDATION.md). Original code notices are preserved. New authored companion prose and helper code are CC0, excluding original KACTL source excerpts, whose individual notices still apply.
 
 Worked-case source ledgers: [math](research/math-pattern-sources.md), [graphs and DP](research/graph-dp-pattern-sources.md), [model changes](research/model-pattern-sources.md).
+
+## Runnable number queries
+
+The math book now prints prime flags, prime lists, inclusive numeric-range prime counts, prime-occurrence prefix counts for arrays, segmented prime enumeration, and divisor-count/sum tables. `PrimeTable` supports bounds through 10^7; segmented enumeration supports endpoints through 10^12 and interval width through 10^7. Divisor tables support positive queries through 2*10^6.
+
+Compile the complete examples from the repository root:
+
+```sh
+clang++ -std=c++17 -O2 handbooks/examples/prime_range_queries.cpp -o /tmp/prime_queries
+clang++ -std=c++17 -O2 handbooks/examples/segmented_primes.cpp -o /tmp/segment_primes
+clang++ -std=c++17 -O2 handbooks/examples/divisor_queries.cpp -o /tmp/divisor_queries
+```
+
+Prime queries read `V Q` followed by Q inclusive ranges. Segmented enumeration reads `L R` and prints the count followed by primes. Divisor queries read Q followed by Q positive integers and print divisor count and sum for each. These programs include the repository helper; for a judge submission paste the required printed modules above main instead of retaining a local include path.
